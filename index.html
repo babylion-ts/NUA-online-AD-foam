@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Image Consulting · 무료 후기 이벤트</title>
+<meta name="description" content="이미지 컨설팅 무료 후기 이벤트 신청">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Image Consulting · 무료 후기 이벤트">
+<meta property="og:image" content="pages/p-1.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+<style>
+  :root { --font: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', sans-serif; --accent: #f1541f; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body { background: #201d1a; color: #f3f1ec; font-family: var(--font); -webkit-font-smoothing: antialiased; overflow: hidden; }
+
+  .app { min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; }
+
+  /* 화면 = PDF 원본 페이지 비율(1080:1800) 그대로 */
+  .stage {
+    position: relative;
+    width: min(100vw, 460px, calc(100dvh * 0.6));
+    aspect-ratio: 1080 / 1800;
+    overflow: hidden;
+    background: #201d1a;
+  }
+  .page { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; display: block; }
+  .layer { position: absolute; inset: 0; animation: fade .32s ease both; }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+  /* 투명 탭 영역 */
+  .hot { position: absolute; border: 0; background: transparent; padding: 0; margin: 0; cursor: pointer; border-radius: 0; }
+  .hot.sel { box-shadow: inset 0 0 0 4px var(--accent); }              /* 각진 사진/선택지에 맞춰 직각 테두리 */
+  .hot.round.sel { box-shadow: inset 0 0 0 3px var(--accent); border-radius: 22%; }  /* 0~10 둥근 버튼(모서리 곡률 비율로 맞춤) */
+
+  /* 원본 입력칸 위에 얹는 실제 입력창 */
+  .field {
+    position: absolute; border: 0; background: transparent;
+    font-family: var(--font); outline: none; padding: 0 4%;
+    text-align: center; line-height: 1;
+  }
+  .field.left { text-align: left; padding: 0 6%; }
+
+  /* 디버그(?edit=1): 탭 영역 표시 */
+  .edit .hot { background: rgba(241,84,31,.3); box-shadow: inset 0 0 0 1px #f1541f; }
+  .edit .field { background: rgba(0,130,255,.35) !important; }
+
+  /* 뒤로가기 */
+  .back { position: absolute; top: 2%; left: 3%; z-index: 6; width: 34px; height: 34px; border: 0; border-radius: 50%; background: rgba(0,0,0,.16); color: #fff; display: none; place-items: center; cursor: pointer; opacity: .65; }
+  .back svg { width: 20px; height: 20px; }
+  .back.show { display: grid; }
+
+  /* 완료 / 제출 중 */
+  .cover { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 18px; padding: 10%;
+    background: radial-gradient(130% 100% at 60% 5%, #4a453f, #262019 68%, #17130f); }
+  .cover.show { display: flex; animation: fade .4s ease both; }
+  .tick { width: 66px; height: 66px; border-radius: 50%; border: 2px solid var(--accent); display: grid; place-items: center; }
+  .tick svg { width: 30px; height: 30px; color: var(--accent); }
+  .cover h2 { font-size: 26px; font-weight: 800; }
+  .cover p { font-size: 15px; line-height: 1.75; color: rgba(243,241,236,.72); }
+  .dots { display: flex; gap: 9px; }
+  .dots i { width: 11px; height: 11px; border-radius: 50%; background: #f3f1ec; animation: pulse 1.2s infinite ease-in-out; }
+  .dots i:nth-child(2) { animation-delay: .15s; } .dots i:nth-child(3) { animation-delay: .3s; }
+  @keyframes pulse { 0%,80%,100% { transform: scale(.4); opacity: .3; } 40% { transform: scale(1); opacity: 1; } }
+  .dots + p { font-size: 15px; color: rgba(243,241,236,.7); }
+
+  /* 개인정보 동의 (마지막 페이지, 다음 버튼 아래) */
+  .consent { position: absolute; left: 6%; width: 88%; top: 90.2%; display: flex; align-items: center; justify-content: center; gap: 9px; color: #f3f1ec; font-size: clamp(10.5px, 3.4vw, 14px); }
+  .consent .box { flex: none; width: 22px; height: 22px; border-radius: 5px; border: 2px solid rgba(255,255,255,.55); background: transparent; display: grid; place-items: center; cursor: pointer; padding: 0; }
+  .consent .box svg { width: 13px; height: 13px; color: #fff; opacity: 0; }
+  .consent .box.on { background: #16130f; border-color: #16130f; }
+  .consent .box.on svg { opacity: 1; }
+  .consent.warn .box { border-color: var(--accent); animation: shake .32s; }
+  @keyframes shake { 0%,100%{transform:none} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+  .consent label { cursor: pointer; line-height: 1.35; word-break: keep-all; }
+  .consent .policy-link { font-weight: 700; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
+
+  /* 개인정보처리방침 팝업 */
+  .modal { position: fixed; inset: 0; z-index: 30; display: none; align-items: center; justify-content: center; padding: 22px; background: rgba(0,0,0,.62); }
+  .modal.show { display: flex; animation: fade .22s ease both; }
+  .modal .card { width: 100%; max-width: 400px; max-height: 82vh; display: flex; flex-direction: column; background: #f4f2ee; color: #2a2724; border-radius: 14px; overflow: hidden; box-shadow: 0 18px 50px rgba(0,0,0,.5); }
+  .modal .card h3 { font-size: 16px; font-weight: 800; padding: 20px 20px 12px; flex: none; }
+  .modal .card .body { padding: 0 20px 4px; overflow-y: auto; font-size: 13px; line-height: 1.7; white-space: pre-wrap; color: #3b362f; -webkit-overflow-scrolling: touch; }
+  .modal .card .close { flex: none; margin: 14px 20px 18px; min-height: 46px; border: 0; border-radius: 9px; background: #1f1c18; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
+
+  @media (prefers-reduced-motion: reduce) { .layer,.cover,.modal { animation: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="stage" id="stage">
+    <button class="back" id="back" type="button" aria-label="이전">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+    </button>
+    <div id="screen"></div>
+    <div class="cover" id="loading"><div class="dots"><i></i><i></i><i></i></div><p>제출 중</p></div>
+    <div class="cover" id="done">
+      <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+      <h2>신청 완료!</h2>
+      <p>이미지 컨설팅 무료 후기 이벤트에<br>신청해주셔서 감사합니다.<br>남겨주신 연락처로 안내드릴게요 :)</p>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="modal">
+  <div class="card" role="dialog" aria-modal="true" aria-label="개인정보 수집 및 이용 동의">
+    <h3>개인정보 수집 및 이용 동의</h3>
+    <div class="body" id="policyBody"></div>
+    <button class="close" type="button" id="policyClose">확인</button>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   설정 — 응답을 구글 시트로 받으려면 SCRIPT_URL 연결
+   ========================================================= */
+const CONFIG = { SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyeBHRAYjMFcgtU3xP1PNWtO2AZH27C-klJ8YFAHE2sJQZD66VTD95XWfcfwNU11-B8/exec', FORM_ID: 'image-consulting-event', LOADING_MS: 2400 };
+
+/* 추구 이미지 값 (읽는 순서: 1행 좌·우, 2행 좌·우, 3행 좌·우) */
+const WOMEN = ['청순', '과즙', '시크', '세련', '퇴폐', '섹시'];
+const MEN   = ['댄디', '포멀', '시크', '소년미', '터프', '퇴폐'];
+
+/* 6칸 그리드 좌표(%) — 페이지 3·4 공통 (원본에서 측정) */
+const GRID = [
+  [9.9, 20.3, 35.4, 20.9],  [54.5, 20.3, 35.4, 20.9],
+  [9.9, 45.7, 35.4, 20.9],  [54.5, 45.7, 35.4, 20.9],
+  [9.9, 71.1, 35.4, 20.9],  [54.5, 71.1, 35.4, 20.9],
+];
+/* 0~10 스케일 — 숫자 버튼별 정확한 좌표(원본 측정) */
+const SCALE = [
+  [1.67, 73.11, 7.22, 4.5], [10.65, 73.11, 7.22, 4.5], [19.54, 73.11, 7.22, 4.5], [28.52, 73.11, 7.22, 4.5],
+  [37.41, 73.11, 7.22, 4.5], [46.39, 73.11, 7.22, 4.5], [55.28, 73.11, 7.22, 4.5], [64.17, 73.11, 7.22, 4.5],
+  [73.15, 73.11, 7.22, 4.5], [82.04, 73.11, 7.22, 4.5], [91.02, 73.11, 7.22, 4.5],
+];
+const NEXT = [35.5, 83.3, 28, 5.6];   // 페이지 6·7·8·9 공통 '다음'
+
+/* =========================================================
+   단계 정의 — 각 단계 = 원본 페이지 + 그 위 탭영역
+   ========================================================= */
+const STEPS = [
+  { id: 'intro', img: 'pages/p-1.jpg',
+    zones: [{ kind: 'next', rect: [16, 81.5, 68, 6.3] }] },
+
+  { id: 'gender', img: 'pages/p-2.jpg', col: '성별',
+    zones: [
+      { kind: 'pick', value: 'MEN',   rect: [10.0, 32.5, 35.28, 28.0] },
+      { kind: 'pick', value: 'WOMEN', rect: [53.61, 32.56, 35.28, 27.94] },
+      { kind: 'next', rect: [32, 81.2, 34, 6.7], require: ['성별'] },
+    ] },
+
+  { id: 'pursuit', col: '추구 이미지',
+    imgBy: a => a['성별'] === 'MEN' ? 'pages/p-4.jpg' : 'pages/p-3.jpg',
+    zonesBy: a => (a['성별'] === 'MEN' ? MEN : WOMEN).map((v, i) => ({ kind: 'pick', value: v, rect: GRID[i], auto: true })) },
+
+  { id: 'concern', img: 'pages/p-5.jpg', col: '스타일링 고민',
+    zones: [
+      { kind: 'choice', value: '옷은 많은데 막상 입을 옷이 없다.', rect: [10.2, 45.2, 79.6, 7.9] },
+      { kind: 'choice', value: '잘맞는 메이크업을 모르겠다.',       rect: [10.2, 55.1, 79.6, 7.9] },
+      { kind: 'choice', value: '체형 보완하는 것이 어렵다.',         rect: [10.2, 65.1, 79.6, 7.9] },
+      { kind: 'choice', value: '내가 원하는 분위기가 나오지 않는다.', rect: [10.2, 75.0, 79.6, 7.9] },
+    ] },
+
+  { id: 'mood', img: 'pages/p-6.jpg', col: '무드 인지도',
+    zones: [
+      ...SCALE.map((r, n) => ({ kind: 'scale', value: n, rect: r, round: true })),
+      { kind: 'next', rect: NEXT, require: ['무드 인지도'] },
+    ] },
+
+  { id: 'profile', img: 'pages/p-7.jpg',
+    zones: [
+      { kind: 'field', col: '성함',    rect: [16, 53.2, 33.4, 5.9], fill: 'rgb(158,157,152)', ink: '#2c2a27' },
+      { kind: 'field', col: '출생연도', rect: [50.6, 53.2, 33.4, 5.9], fill: 'rgb(158,157,152)', ink: '#2c2a27' },
+      { kind: 'next', rect: NEXT, require: ['성함', '출생연도'] },
+    ] },
+
+  { id: 'phone', img: 'pages/p-8.jpg',
+    zones: [
+      { kind: 'field', col: '연락처', rect: [22.4, 49.8, 57.3, 6.4], fill: 'rgb(105,102,95)', ink: '#f3f1ec', type: 'tel', mode: 'numeric', align: 'left' },
+      { kind: 'next', rect: NEXT, require: ['연락처'] },
+    ] },
+
+  { id: 'station', img: 'pages/p-9.jpg', consent: true,
+    zones: [
+      { kind: 'field', col: '가까운 역', rect: [10.2, 49.8, 73.8, 6.4], fill: 'rgb(105,102,95)', ink: '#f3f1ec', align: 'left' },
+      { kind: 'next', rect: NEXT, require: ['가까운 역'], consent: true, submit: true },
+    ] },
+];
+
+/* =========================================================
+   세션·추적
+   ========================================================= */
+const T0 = Date.now();
+const SID_KEY = 'ic_form_sid';
+const newId = () => { try { if (crypto.randomUUID) return crypto.randomUUID(); } catch (e) {} return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); };
+const SID = (() => { try { let v = sessionStorage.getItem(SID_KEY); if (!v) { v = newId(); sessionStorage.setItem(SID_KEY, v); } return v; } catch (e) { return newId(); } })();
+const params = new URLSearchParams(location.search);
+const state = { i: 0, answers: {}, seq: 0, busy: false, submitted: false, consent: false };
+
+/* 개인정보 수집 및 이용 동의 안내문 */
+const POLICY = `NUA는 이미지 컨설팅 체험단 이벤트 진행을 위하여 아래와 같이 개인정보를 수집·이용합니다.
+
+1. 수집·이용 목적
+• 이벤트 참가 접수 및 본인 확인
+• 무드 리딩 프로그램 진행 및 결과 안내
+• 무드 스타일링 관련 안내 연락
+
+2. 수집하는 개인정보 항목
+이름, 전화번호, 주소
+
+3. 보유 및 이용 기간
+이벤트 종료 및 경품 발송 완료 후 3개월 이내 파기`;
+
+function track(event, extra = {}) {
+  const s = STEPS[state.i] || {};
+  const p = { form: CONFIG.FORM_ID, sid: SID, seq: ++state.seq, event, step: s.id, ts: new Date().toISOString(), elapsed: Math.round((Date.now() - T0) / 1000), ...extra };
+  console.log('[track]', p);
+  if (CONFIG.SCRIPT_URL) {
+    const body = JSON.stringify(p);
+    // Apps Script는 fetch(POST)로 확실히 doPost가 실행됨. keepalive라 화면 이탈 시에도 전송됨.
+    try {
+      fetch(CONFIG.SCRIPT_URL, { method: 'POST', mode: 'no-cors', keepalive: true, headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body });
+    } catch (e) {
+      try { navigator.sendBeacon(CONFIG.SCRIPT_URL, new Blob([body], { type: 'text/plain;charset=UTF-8' })); } catch (e2) {}
+    }
+  }
+}
+
+/* =========================================================
+   렌더링
+   ========================================================= */
+const $screen = document.getElementById('screen');
+const $back = document.getElementById('back');
+const $loading = document.getElementById('loading');
+const $done = document.getElementById('done');
+const EDIT = params.has('edit');
+if (EDIT) document.body.classList.add('edit');
+
+const imgOf = s => s.imgBy ? s.imgBy(state.answers) : s.img;
+const zonesOf = s => s.zonesBy ? s.zonesBy(state.answers) : s.zones;
+const css = r => `left:${r[0]}%;top:${r[1]}%;width:${r[2]}%;height:${r[3]}%`;
+
+function render() {
+  const s = STEPS[state.i];
+  const layer = document.createElement('div');
+  layer.className = 'layer';
+  const im = document.createElement('img');
+  im.className = 'page'; im.src = imgOf(s); im.alt = '';
+  layer.appendChild(im);
+
+  zonesOf(s).forEach((z, idx) => {
+    if (z.kind === 'field') {
+      const inp = document.createElement('input');
+      inp.className = 'field' + (z.align === 'left' ? ' left' : '');
+      inp.dataset.col = z.col; inp.dataset.fill = z.fill;
+      inp.type = z.type || 'text';
+      if (z.mode) inp.inputMode = z.mode;
+      inp.style.cssText = css(z.rect) + `;color:${z.ink};font-size:clamp(13px,4.4vw,20px)`;
+      inp.value = state.answers[z.col] || '';
+      if (inp.value) inp.style.background = z.fill;
+      layer.appendChild(inp);
+    } else {
+      const b = document.createElement('button');
+      b.className = 'hot' + (z.round ? ' round' : ''); b.type = 'button';
+      b.style.cssText = css(z.rect); b.dataset.idx = idx;
+      if ((z.kind === 'pick' || z.kind === 'scale' || z.kind === 'choice') && String(state.answers[s.col]) === String(z.value)) b.classList.add('sel');
+      layer.appendChild(b);
+    }
+  });
+
+  if (s.consent) {
+    const c = document.createElement('div');
+    c.className = 'consent' + (state.consent ? '' : '');
+    c.innerHTML = `<button class="box${state.consent ? ' on' : ''}" type="button" aria-label="동의"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button><label><span class="policy-link">개인정보처리방침</span>을 확인하였으며 이에 동의합니다.</label>`;
+    layer.appendChild(c);
+  }
+
+  $screen.replaceChildren(layer);
+  $back.classList.toggle('show', state.i > 0);
+}
+
+function go(i, dir = 'next') { state.i = i; render(); track('view', { dir }); }
+function next() { if (STEPS[state.i + 1]) go(state.i + 1); else finish(); }
+
+function finish() {
+  state.busy = true; state.submitted = true;
+  track('submit', { answers: { ...state.answers }, consent: state.consent });
+  try { sessionStorage.removeItem(SID_KEY); } catch (e) {}
+  $back.classList.remove('show');
+  $loading.classList.add('show');
+  setTimeout(() => { $loading.classList.remove('show'); $done.classList.add('show'); state.busy = false; }, CONFIG.LOADING_MS);
+}
+
+/* 클릭 처리 */
+$screen.addEventListener('click', e => {
+  if (state.busy) return;
+  // 개인정보처리방침 링크 → 팝업
+  if (e.target.closest('.policy-link')) { openModal(); return; }
+  // 동의 체크박스 (박스/라벨 클릭 시 토글)
+  const consentEl = e.target.closest('.consent');
+  if (consentEl) {
+    state.consent = !state.consent;
+    consentEl.querySelector('.box').classList.toggle('on', state.consent);
+    consentEl.classList.remove('warn');
+    return;
+  }
+
+  const b = e.target.closest('.hot');
+  if (!b) return;
+  const s = STEPS[state.i];
+  const z = zonesOf(s)[+b.dataset.idx];
+
+  if (z.kind === 'next') {
+    if (z.require && !z.require.every(c => (state.answers[c] || '').toString().trim())) {
+      const empty = z.require.find(c => !(state.answers[c] || '').toString().trim());
+      const f = $screen.querySelector(`.field[data-col="${empty}"]`); if (f) f.focus();
+      return;
+    }
+    if (z.consent && !state.consent) {
+      const ce = $screen.querySelector('.consent');
+      if (ce) { ce.classList.remove('warn'); void ce.offsetWidth; ce.classList.add('warn'); }
+      return;
+    }
+    if (z.submit) finish(); else next();
+    return;
+  }
+  if (z.kind === 'pick' || z.kind === 'scale' || z.kind === 'choice') {
+    state.answers[s.col] = z.value;
+    track('answer', { col: s.col, answer: z.value });
+    $screen.querySelectorAll('.hot').forEach(x => x.classList.remove('sel'));
+    b.classList.add('sel');
+    if (z.auto || z.kind === 'choice') { state.busy = true; setTimeout(() => { state.busy = false; next(); }, 240); }
+  }
+});
+
+/* 입력 처리 — 글자 있으면 원본 자리표시자 덮기 */
+$screen.addEventListener('input', e => {
+  const f = e.target.closest('.field'); if (!f) return;
+  state.answers[f.dataset.col] = f.value;
+  f.style.background = f.dataset.fill;
+});
+// 칸을 누르면(커서 깜빡일 때) 원본 예시 글씨를 즉시 가림
+$screen.addEventListener('focusin', e => {
+  const f = e.target.closest('.field'); if (!f) return;
+  f.style.background = f.dataset.fill;
+});
+// 비어있는 채로 벗어나면 다시 예시 글씨가 보이도록
+$screen.addEventListener('focusout', e => {
+  const f = e.target.closest('.field'); if (!f) return;
+  f.style.background = f.value.length ? f.dataset.fill : 'transparent';
+});
+$screen.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || !e.target.closest('.field')) return;
+  e.preventDefault();
+  const fields = [...$screen.querySelectorAll('.field')];
+  const idx = fields.indexOf(e.target);
+  if (idx < fields.length - 1) fields[idx + 1].focus(); else e.target.blur();
+});
+
+$back.addEventListener('click', () => { if (!state.busy && state.i > 0) go(state.i - 1, 'back'); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && !state.submitted) track('leave'); });
+
+/* 개인정보처리방침 팝업 */
+const $modal = document.getElementById('modal');
+document.getElementById('policyBody').textContent = POLICY;
+function openModal() { $modal.classList.add('show'); track('policy_open'); }
+function closeModal() { $modal.classList.remove('show'); }
+document.getElementById('policyClose').addEventListener('click', closeModal);
+$modal.addEventListener('click', e => { if (e.target === $modal) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $modal.classList.contains('show')) closeModal(); });
+
+/* 시작 + 프리로드 */
+render();
+track('view', { dir: 'start' });
+['pages/p-1.jpg','pages/p-2.jpg','pages/p-3.jpg','pages/p-4.jpg','pages/p-5.jpg','pages/p-6.jpg','pages/p-7.jpg','pages/p-8.jpg','pages/p-9.jpg']
+  .forEach(src => { const i = new Image(); i.src = src; });
+</script>
+</body>
+</html>
