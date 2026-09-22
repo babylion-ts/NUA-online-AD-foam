@@ -10,7 +10,9 @@
 <meta property="og:image" content="pages/p-1.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;800&family=Gowun+Dodum&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2/fonts/static/woff2/SUIT.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.css">
 <style>
   :root { --font: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, 'Apple SD Gothic Neo', sans-serif; --accent: #f1541f; }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -22,19 +24,80 @@
   /* 화면 = PDF 원본 페이지 비율(1080:1800) 그대로 */
   .stage {
     position: relative;
-    width: min(100vw, 460px, calc(100dvh * 0.6));
+    --sw: min(100vw, 460px, calc(100dvh * 0.6));   /* 화면 폭 — 글자·모서리 크기를 이 폭에 비례시킴 */
+    width: var(--sw);
     aspect-ratio: 1080 / 1800;
     overflow: hidden;
     background: #201d1a;
   }
   .page { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: fill; display: block; }
-  .layer { position: absolute; inset: 0; animation: fade .32s ease both; }
+  .layer { position: absolute; inset: 0; }
   @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+
+  /* 스모어식 전환용 조각 — 원본 페이지를 마스크(m-*.png)로 오려 요소별로 띄움. 멈춰 있을 땐 원본과 똑같이 보임 */
+  .fx { position: absolute; inset: 0; pointer-events: none; }
+  .piece { position: absolute; overflow: hidden; transform-origin: 50% 50%; will-change: transform, opacity; }
+  .pc-in { position: absolute; background-size: 100% 100%; background-repeat: no-repeat;
+    -webkit-mask-size: 100% 100%; mask-size: 100% 100%; -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat; }
+  .fx .field.fake { display: flex; align-items: center; justify-content: center; padding: 0 calc(var(--sw) * .04); white-space: nowrap; overflow: hidden; }
+  .fx .field.fake.left { justify-content: flex-start; padding: 0 calc(var(--sw) * .06); }
 
   /* 투명 탭 영역 */
   .hot { position: absolute; border: 0; background: transparent; padding: 0; margin: 0; cursor: pointer; border-radius: 0; }
-  .hot.sel { box-shadow: inset 0 0 0 4px var(--accent); }              /* 각진 사진/선택지에 맞춰 직각 테두리 */
-  .hot.round.sel { box-shadow: inset 0 0 0 3px var(--accent); border-radius: 22%; }  /* 0~10 둥근 버튼(모서리 곡률 비율로 맞춤) */
+
+  /* 스모어 0~10 숫자 버튼 (smore.im/form/qrjbVhbbeC 4번 문항, FormScalePC) — 스모어 CSS 값 그대로.
+     스모어 px(버튼 44·간격 6 → 한 줄 544px)을 --u로 비례시켜 한 줄이 화면 폭의 96.6%(원본 숫자 줄 폭)가 되게 함.
+     색은 그 폼 테마: 테두리·선택 배경 = 흰색 76%, 숫자·라벨 = 흰색, 선택된 숫자 = 검정 */
+  .scale-pc { --u: calc(var(--sw) * .966 / 544); --key: rgba(255,255,255,.76); --key-rgb: 255,255,255; --key-text: #000; --text: #fff;
+    position: absolute; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: calc(var(--u) * 20); font-family: var(--font); }
+  .scale-pc .nums { position: relative; gap: calc(var(--u) * 6); display: flex; flex-direction: row; justify-content: space-between; align-items: center; }
+  .snum { display: flex; flex-direction: row; justify-content: center; align-items: center; cursor: pointer; padding: calc(var(--u) * 10);
+    height: calc(var(--u) * 44); width: calc(var(--u) * 44); border: calc(var(--u) * 2) solid var(--key); border-radius: calc(var(--u) * 18);
+    transition: transform .3s ease, background-color .3s ease, color .3s ease; flex: none; color: var(--text);
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); font-size: calc(var(--u) * 20); line-height: 1; user-select: none; -webkit-user-select: none; }
+  @media (hover: hover) { .snum:hover { transform: translateY(calc(var(--u) * -2)) scale(1.05); background-color: rgba(var(--key-rgb), .2); } }
+  .snum.selected, .snum.selected:hover { transform: translateY(calc(var(--u) * -3)) scale(1.1); color: var(--key-text); background-color: var(--key); }
+  .scale-pc .labels { display: flex; flex-direction: row; justify-content: space-between; align-items: center; color: var(--text); width: 100%;
+    font-size: calc(var(--u) * 16); line-height: calc(var(--u) * 20); }
+  .scale-pc .labels span { text-overflow: ellipsis; overflow: hidden; white-space: nowrap; flex: 1; }
+  .scale-pc .labels .l { text-align: left; }
+  .scale-pc .labels .r { text-align: right; }
+
+  /* 스모어 '다음' 버튼 (Button · 버튼 테마 2) — 스모어 CSS 값 그대로, px는 폰 폭 390px 기준으로 --u 비례.
+     색은 레퍼런스 폼(letteRing) 테마: 배경 흰색 76% + 같은 색 그림자, 글자 검정, 아이콘 chevron_right */
+  .smore-btn { --u: calc(var(--sw) / 390); position: absolute; left: calc(50% - var(--u) * 75); top: calc(87% - var(--u) * 27);
+    width: calc(var(--u) * 150); height: calc(var(--u) * 54); padding: calc(var(--u) * 3) calc(var(--u) * 6); margin: 0;
+    display: flex; justify-content: center; align-items: center; border: 0; border-radius: calc(var(--u) * 12);
+    background: rgba(255,255,255,.76); box-shadow: 0 calc(var(--u) * 5) calc(var(--u) * 20) rgba(255,255,255,.34); color: #000;
+    font-family: var(--font); cursor: pointer; transition: transform .2s ease-in-out, background-color .2s ease, opacity .2s ease;
+    -webkit-backface-visibility: hidden; backface-visibility: hidden; }
+  .smore-btn svg { width: calc(var(--u) * 24); height: calc(var(--u) * 24); margin-right: calc(var(--u) * 10); flex: none; }
+  .smore-btn span { font-size: calc(var(--u) * 16); font-weight: 500; line-height: calc(var(--u) * 24); padding: calc(var(--u) * 6); letter-spacing: -.5px; }
+  .smore-btn.disabled { opacity: .5; cursor: not-allowed; }
+  @media (hover: hover) { .smore-btn:not(.disabled):hover { transform: translateY(-4px); } }
+  /* 선택지 버튼도 미니멀하게 — 글씨 13px·보통 굵기, 모서리 10px, 그림자 옅게 */
+  .smore-btn.choice { padding: 0 calc(var(--u) * 12); border-radius: calc(var(--u) * 10); box-shadow: 0 calc(var(--u) * 3) calc(var(--u) * 12) rgba(255,255,255,.18); }
+  .smore-btn.choice span { font-size: calc(var(--u) * 13); font-weight: 400; padding: 0; line-height: 1.2; letter-spacing: -.3px; }
+  /* '다음'은 미니멀하게 작게(96×36px@390) — 원래 이미지 속 '다음' 자리(중심 y 86%)에 */
+  .smore-btn.next { left: calc(50% - var(--u) * 48); top: calc(86% - var(--u) * 18); width: calc(var(--u) * 96); height: calc(var(--u) * 36);
+    padding: 0; border-radius: calc(var(--u) * 10); box-shadow: 0 calc(var(--u) * 3) calc(var(--u) * 10) rgba(255,255,255,.18); }
+  .smore-btn.next svg { width: calc(var(--u) * 16); height: calc(var(--u) * 16); margin-right: calc(var(--u) * 3); }
+  .smore-btn.next span { font-size: calc(var(--u) * 13.5); padding: 0; line-height: 1; letter-spacing: -.3px; }
+
+  /* 추구 이미지 이름(청순·댄디…) — 이름 스타일 시안 7: Pretendard 10.5px, 살짝 흐린 흰색, 사진 아래 10px(폰 390px 기준) */
+  .plabel { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; line-height: 1; pointer-events: none;
+    font-family: 'Pretendard', var(--font); font-weight: 400; font-size: calc(var(--sw) * 10.5 / 390); color: rgba(243,241,236,.72); }
+
+  /* 프로세스 페이지(시안 2-2, 세로 타임라인) — HTML로 구성. 좌표·크기는 폰 폭 390px(화면 높이 650px) 기준 px × --u */
+  .blk { --u: calc(var(--sw) / 390); position: absolute; color: #f4f1ec; }
+  .blk .pz-title { font-family: 'Pretendard', var(--font); font-weight: 700; font-size: calc(var(--u) * 23); line-height: 1.2; letter-spacing: -.01em; }
+  .blk .pz-h { font-family: 'Pretendard', var(--font); font-weight: 500; font-size: calc(var(--u) * 16); line-height: 1.2; }
+  .blk .pz-k { font-family: 'Gowun Dodum', var(--font); font-size: calc(var(--u) * 10.5); line-height: 1.2; margin-top: calc(var(--u) * 1.5); color: rgba(244,241,236,.72); }
+  .blk .pz-ph { position: absolute; display: block; object-fit: cover; }
+  .blk .pz-line { position: absolute; width: 1px; background: linear-gradient(rgba(255,255,255,.55), rgba(255,255,255,0)); }
+  .blk .pz-dot { position: absolute; width: calc(var(--u) * 11); height: calc(var(--u) * 11); border-radius: 50%; border: 1.5px solid #f4f1ec; background: rgba(0,0,0,.2); box-sizing: border-box; }
+  .blk .pz-chip { position: absolute; right: 0; top: 0; white-space: nowrap; font-family: 'Pretendard', var(--font); font-weight: 500; font-size: calc(var(--u) * 10.5);
+    padding: calc(var(--u) * 5) calc(var(--u) * 10); border-radius: 999px; border: 1px solid rgba(255,255,255,.45); color: rgba(255,255,255,.85); }
 
   /* 원본 입력칸 위에 얹는 실제 입력창 */
   .field {
@@ -43,6 +106,16 @@
     text-align: center; line-height: 1;
   }
   .field.left { text-align: left; padding: 0 6%; }
+  /* 스모어 입력칸(TextInput, 어두운 테마) — 시안 A2: 폭 68%, 높이 40px, 모서리 10px, 글씨 14px(폰 390px 기준) */
+  .field.glass { --u: calc(var(--sw) / 390); text-align: left; padding: 0 calc(var(--u) * 12); color: #fff; font-size: calc(var(--u) * 14);
+    border: 1px solid rgba(255,255,255,.63); background: rgba(255,255,255,.22); border-radius: calc(var(--u) * 10);
+    -webkit-backdrop-filter: blur(10px) brightness(110%) contrast(110%) saturate(110%); backdrop-filter: blur(10px) brightness(110%) contrast(110%) saturate(110%);
+    box-shadow: 0 2px 10px 3px rgba(0,0,0,.032); caret-color: #fff;
+    transition: border-color .3s ease, background-color .4s ease, box-shadow .3s ease; }
+  .field.glass::placeholder { color: rgba(255,255,255,.6); }
+  .field.glass:focus { border-color: rgba(255,255,255,.9); background: rgba(255,255,255,.3); box-shadow: 0 2px 10px 5px rgba(0,0,0,.032); }
+  .fx .field.glass.fake { display: flex; align-items: center; justify-content: flex-start; padding: 0 calc(var(--u) * 12); white-space: nowrap; overflow: hidden; }
+  .fx .field.glass.fake.empty { color: rgba(255,255,255,.6); }
 
   /* 디버그(?edit=1): 탭 영역 표시 */
   .edit .hot { background: rgba(241,84,31,.3); box-shadow: inset 0 0 0 1px #f1541f; }
@@ -56,22 +129,34 @@
   /* 완료 / 제출 중 */
   .cover { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 18px; padding: 10%;
     background: radial-gradient(130% 100% at 60% 5%, #4a453f, #262019 68%, #17130f); }
-  .cover.show { display: flex; animation: fade .4s ease both; }
+  .cover.show { display: flex; }
   .tick { width: 66px; height: 66px; border-radius: 50%; border: 2px solid var(--accent); display: grid; place-items: center; }
   .tick svg { width: 30px; height: 30px; color: var(--accent); }
   .cover h2 { font-size: 26px; font-weight: 800; }
   .cover p { font-size: 15px; line-height: 1.75; color: rgba(243,241,236,.72); }
-  /* 완료 화면(이미지 전체 + 신청완료 배지) */
+  /* 제출 중(시안 1): 폼과 같은 블러 배경 위에 살짝 어둡게 + 흰 점 */
+  #loading { background: linear-gradient(rgba(25,22,19,.5), rgba(25,22,19,.5)), url(pages/bg.jpg) center/cover, #201d1a; }
+  /* 완료 화면(시안 4-8): 배경 = done-48.jpg(원래 사진을 위에 크게, 아래는 같은 사진을 흐리게 이어 붙임)
+     그 위에 흰 테두리 '신청 완료' 배지 → 감사합니다 → 짧은 선 → '추후 유선으로 안내드립니다 :)'. 줄 위치는 배지 중심(y 58.5%)에서 폰 390px 기준 px만큼 아래 */
   #done { display: none; padding: 0; background: #201d1a; }
-  #done.show { display: block; animation: fade .4s ease both; }
-  .done-badge { position: absolute; top: 11%; left: 50%; transform: translateX(-50%); z-index: 2;
-    background: var(--accent); color: #fff; font-weight: 700; font-size: clamp(12px, 3.4vw, 15px);
-    letter-spacing: .02em; padding: 6px 18px; border-radius: 999px; box-shadow: 0 4px 14px rgba(0,0,0,.35); white-space: nowrap; }
-  /* 말풍선(사진 폭에 맞춰 정렬): 왼쪽 29.4% ~ 오른쪽 88.4% */
-  .done-bubble { position: absolute; left: 29.4%; top: 70.8%; width: 59%; height: 14.8%; z-index: 2;
-    background: #e9e8e4; color: #2b2824; border-radius: 16px; box-sizing: border-box;
-    display: flex; flex-direction: column; justify-content: center; gap: .75em; padding: 3% 5%; }
-  .done-bubble span { font-size: clamp(11px, 3.4vw, 16px); font-weight: 500; line-height: 1.15; word-break: keep-all; text-align: center; }
+  #done.show { display: block; }
+  .done-text { --u: calc(var(--sw) / 390); position: absolute; inset: 0; z-index: 2; pointer-events: none; font-family: var(--font); }
+  .done-text > * { position: absolute; left: 0; right: 0; margin: 0 auto; text-align: center; white-space: nowrap; line-height: 1;
+    transform: translateY(-50%); top: calc(58.5% + var(--u) * var(--dy)); }
+  .done-text .badge { width: max-content; padding: calc(var(--u) * 5.5) calc(var(--u) * 12); border: 1.5px solid rgba(255,255,255,.67); border-radius: 999px;
+    font-size: calc(var(--u) * 11); font-weight: 500; color: rgba(255,255,255,.9); }
+  .done-text .title { font-size: calc(var(--u) * 21); font-family: 'SUIT', var(--font); font-weight: 600; color: #f5f2ec; }   /* 글씨체 시안 12: SUIT 세미볼드 */
+  .done-text .rule { width: calc(var(--u) * 22); height: calc(var(--u) * 2.8); border-radius: 2px; background: rgba(255,255,255,.47); }
+  .done-text .msg { font-size: calc(var(--u) * 14); font-family: 'Gowun Dodum', var(--font); font-weight: 400; color: #f5f2ec; }   /* 글씨체 시안 4: 고운돋움 */
+  /* 인스타그램 링크(시안 16): '@nua.look' 아래 '👆 눌러서 인스타그램 보기' — 안내 줄은 천천히 깜빡이고 손가락은 톡톡 두드리듯 움직임 */
+  .done-text .handle { top: auto; bottom: calc(var(--u) * 20); transform: none; display: flex; flex-direction: column; align-items: center; gap: calc(var(--u) * 6);
+    font-size: calc(var(--u) * 12); font-weight: 400; letter-spacing: .04em; color: rgba(255,255,255,.75);
+    width: max-content; padding: calc(var(--u) * 6) calc(var(--u) * 12); text-decoration: none; pointer-events: auto; }
+  .done-text .handle .hint { font-size: calc(var(--u) * 10.5); letter-spacing: .02em; color: rgba(255,255,255,.55); animation: hintBlink 1.8s ease-in-out infinite; }
+  .done-text .handle .tap { display: inline-block; margin-right: calc(var(--u) * 3); transform-origin: 50% 90%; animation: fingerTap 1.8s ease-in-out infinite; }
+  @keyframes hintBlink { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
+  @keyframes fingerTap { 0%, 55%, 100% { transform: translateY(0) scale(1); } 65% { transform: translateY(calc(var(--u) * -4)) scale(1.05); } 75% { transform: translateY(0) scale(.92); } 85% { transform: translateY(calc(var(--u) * -2)); } }
+  @media (prefers-reduced-motion: reduce) { .done-text .handle .hint, .done-text .handle .tap { animation: none; } }
   .dots { display: flex; gap: 9px; }
   .dots i { width: 11px; height: 11px; border-radius: 50%; background: #f3f1ec; animation: pulse 1.2s infinite ease-in-out; }
   .dots i:nth-child(2) { animation-delay: .15s; } .dots i:nth-child(3) { animation-delay: .3s; }
@@ -91,13 +176,13 @@
 
   /* 개인정보처리방침 팝업 */
   .modal { position: fixed; inset: 0; z-index: 30; display: none; align-items: center; justify-content: center; padding: 22px; background: rgba(0,0,0,.62); }
-  .modal.show { display: flex; animation: fade .22s ease both; }
+  .modal.show { display: flex; }
   .modal .card { width: 100%; max-width: 400px; max-height: 82vh; display: flex; flex-direction: column; background: #f4f2ee; color: #2a2724; border-radius: 14px; overflow: hidden; box-shadow: 0 18px 50px rgba(0,0,0,.5); }
   .modal .card h3 { font-size: 16px; font-weight: 800; padding: 20px 20px 12px; flex: none; }
   .modal .card .body { padding: 0 20px 4px; overflow-y: auto; font-size: 13px; line-height: 1.7; white-space: pre-wrap; color: #3b362f; -webkit-overflow-scrolling: touch; }
   .modal .card .close { flex: none; margin: 14px 20px 18px; min-height: 46px; border: 0; border-radius: 9px; background: #1f1c18; color: #fff; font-size: 15px; font-weight: 600; cursor: pointer; }
 
-  @media (prefers-reduced-motion: reduce) { .layer,.cover,.modal { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .consent.warn .box { animation: none; } }
 </style>
 </head>
 <body>
@@ -106,12 +191,18 @@
     <button class="back" id="back" type="button" aria-label="이전">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
     </button>
+    <img class="page" id="plate" src="pages/bg.jpg" alt="" style="opacity:0">
     <div id="screen"></div>
     <div class="cover" id="loading"><div class="dots"><i></i><i></i><i></i></div><p>제출 중</p></div>
     <div class="cover" id="done">
-      <img class="page" src="pages/done-base.jpg" alt="신청 완료">
-      <div class="done-badge">✓ 신청 완료</div>
-      <div class="done-bubble"><span>감사합니다</span><span>추후 유선으로 안내 드립니다 ;)</span></div>
+      <img class="page" src="pages/done-48.jpg" alt="신청 완료">
+      <div class="done-text">
+        <div class="badge" style="--dy:0">신청 완료</div>
+        <div class="title" style="--dy:32">감사합니다</div>
+        <div class="rule" style="--dy:64"></div>
+        <div class="msg" style="--dy:98">추후 유선으로 안내드립니다 :)</div>
+        <a class="handle" href="https://www.instagram.com/nua.look/" target="_blank" rel="noopener"><span>@nua.look</span><span class="hint"><span class="tap">👆</span>눌러서 인스타그램 보기</span></a>
+      </div>
     </div>
   </div>
 </div>
@@ -128,7 +219,7 @@
 /* =========================================================
    설정 — 응답을 구글 시트로 받으려면 SCRIPT_URL 연결
    ========================================================= */
-const CONFIG = { SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyeBHRAYjMFcgtU3xP1PNWtO2AZH27C-klJ8YFAHE2sJQZD66VTD95XWfcfwNU11-B8/exec', FORM_ID: 'image-consulting-event', LOADING_MS: 2400 };
+const CONFIG = { SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbyeBHRAYjMFcgtU3xP1PNWtO2AZH27C-klJ8YFAHE2sJQZD66VTD95XWfcfwNU11-B8/exec', FORM_ID: 'image-consulting-event', LOADING_MS: 800 };
 
 /* 추구 이미지 값 (읽는 순서: 1행 좌·우, 2행 좌·우, 3행 좌·우) */
 const WOMEN = ['청순', '과즙', '시크', '세련', '퇴폐', '섹시'];
@@ -140,67 +231,88 @@ const GRID = [
   [9.9, 45.7, 35.4, 20.9],  [54.5, 45.7, 35.4, 20.9],
   [9.9, 71.1, 35.4, 20.9],  [54.5, 71.1, 35.4, 20.9],
 ];
-/* 0~10 스케일 — 숫자 버튼별 정확한 좌표(원본 측정) */
-const SCALE = [
-  [1.67, 73.11, 7.22, 4.5], [10.65, 73.11, 7.22, 4.5], [19.54, 73.11, 7.22, 4.5], [28.52, 73.11, 7.22, 4.5],
-  [37.41, 73.11, 7.22, 4.5], [46.39, 73.11, 7.22, 4.5], [55.28, 73.11, 7.22, 4.5], [64.17, 73.11, 7.22, 4.5],
-  [73.15, 73.11, 7.22, 4.5], [82.04, 73.11, 7.22, 4.5], [91.02, 73.11, 7.22, 4.5],
-];
-const NEXT = [35.5, 83.3, 28, 5.6];   // 페이지 6·7·8·9 공통 '다음'
+// '다음'은 스모어 버튼(HTML)으로 — 이미지에 그려져 있던 버튼은 지운 사본(*-n.jpg, 원래 배경 복원)을 씀
+const NEXT_BTN = { kind: 'next', smore: true, text: '다음' };
 
 /* =========================================================
    단계 정의 — 각 단계 = 원본 페이지 + 그 위 탭영역
    ========================================================= */
+// 사진 두 장 나란히(블록 안 y 44px부터, 폭 310 × 높이 110, 사이 4px, 바깥 모서리 10px)
+const DIPTYCH = (a, b) => `<img class="pz-ph" src="pages/${a}.jpg" alt="" style="left:0;top:calc(var(--u)*44);width:calc(var(--u)*153);height:calc(var(--u)*110);border-radius:calc(var(--u)*10) 0 0 calc(var(--u)*10)">`
+  + `<img class="pz-ph" src="pages/${b}.jpg" alt="" style="left:calc(var(--u)*157);top:calc(var(--u)*44);width:calc(var(--u)*153);height:calc(var(--u)*110);border-radius:0 calc(var(--u)*10) calc(var(--u)*10) 0">`;
+
 const STEPS = [
-  { id: 'intro', img: 'pages/p-1.jpg',
-    zones: [{ kind: 'next', rect: [16, 81.5, 68, 6.3] }] },
+  // 첫 화면: '신청하기'도 '다음'과 같은 미니멀 스모어 버튼(96×36px@390), 원래 버튼 중심(y 84.5%)에.
+  // 이미지는 p-1n.jpg — 원본 p-1.jpg에서 그려진 '신청하기' 버튼만 지우고 원래 배경 복원
+  { id: 'intro', img: 'pages/p-1n.jpg',
+    zones: [{ ...NEXT_BTN, text: '신청하기', cy: 84.5, w: 150 }] },   // 가로만 넓게(150px@390), 높이·글씨는 '다음'과 같음
 
   // 프로세스 설명 (인트로 다음)
-  { id: 'process', img: 'pages/process.jpg',
-    zones: [{ kind: 'next', rect: [36, 84, 27.2, 5] }] },
+  // 프로세스: 시안 2-2(세로 타임라인). 배경판(bg.jpg) 위에 HTML 블록으로 구성, 사진 4장은 원본 process.jpg에서 잘라낸 proc-*.jpg
+  // blocks: box = [x, y, 폭, 높이] (폰 390×650px 기준) — 넘어갈 때 블록마다 한 조각으로 움직임
+  { id: 'process', img: 'pages/bg.jpg',
+    blocks: [
+      { box: [28, 62, 334, 56], html: `<div class="pz-title">Image consulting<br>process</div>` },
+      { box: [27, 146, 13, 342], html: `<div class="pz-line" style="left:calc(var(--u)*6);top:calc(var(--u)*12);height:calc(var(--u)*330)"></div>`
+          + `<div class="pz-dot" style="left:calc(var(--u)*1);top:calc(var(--u)*0.5)"></div><div class="pz-dot" style="left:calc(var(--u)*1);top:calc(var(--u)*175.5)"></div>` },
+      { box: [52, 142, 310, 154], html: `<div class="pz-h">Mood Reading</div><div class="pz-k">내 고유의 분위기를 읽어드려요</div>` + DIPTYCH('proc-s1a', 'proc-s1b') },
+      { box: [52, 317, 310, 154], html: `<div class="pz-h">Mood Styling</div><div class="pz-k">퍼스널컬러 &amp; 골격진단 중 택1</div>` + DIPTYCH('proc-s2a', 'proc-s2b') },
+      { box: [262, 487, 100, 22], html: `<div class="pz-chip">+ 결과지 PDF</div>` },
+    ],
+    zones: [{ ...NEXT_BTN }] },
 
-  { id: 'gender', img: 'pages/p-2.jpg', col: '성별',
+  // 성별: '다음' 버튼을 지운 이미지(p-2b.jpg — 원본 p-2.jpg에서 버튼 자리만 원래 배경으로 복원), 고르면 바로 넘어감
+  { id: 'gender', img: 'pages/p-2b.jpg', col: '성별',
     zones: [
-      { kind: 'pick', value: 'MEN',   rect: [10.0, 32.5, 35.28, 28.0] },
-      { kind: 'pick', value: 'WOMEN', rect: [53.61, 32.56, 35.28, 27.94] },
-      { kind: 'next', rect: [32, 81.2, 34, 6.7], require: ['성별'] },
+      { kind: 'pick', value: 'MEN',   rect: [10.0, 32.5, 35.28, 28.0], auto: true },
+      { kind: 'pick', value: 'WOMEN', rect: [53.61, 32.56, 35.28, 27.94], auto: true },
     ] },
 
   { id: 'pursuit', col: '추구 이미지',
-    imgBy: a => a['성별'] === 'MEN' ? 'pages/p-4.jpg' : 'pages/p-3.jpg',
+    // p-3x/p-4x: 원본 p-3/p-4에서 질문 문장을 1.5% 아래로 옮기고, 사진 아래 이름은 지운 사본 → 이름은 HTML(.plabel)로
+    imgBy: a => a['성별'] === 'MEN' ? 'pages/p-4x.jpg' : 'pages/p-3x.jpg',
+    labelsBy: a => a['성별'] === 'MEN' ? [41.22, 66.72, 92.28] : [41.28, 66.72, 92.06],   // 줄별 사진 아래 끝(%)
     zonesBy: a => (a['성별'] === 'MEN' ? MEN : WOMEN).map((v, i) => ({ kind: 'pick', value: v, rect: GRID[i], auto: true })) },
 
-  { id: 'concern', img: 'pages/p-5.jpg', col: '스타일링 고민',
+  // 스타일링 고민: 스모어 텍스트 선택지 배치(레퍼런스 letteRing 폼 3번 문항) — 사진(폭 80% = 원본 크기, 모서리 15px) → 질문(사진 아래 50px) → 선택지 4개, 묶음 전체를 세로 가운데에.
+  // 이미지는 p-5n.jpg — 원본 p-5.jpg의 사진·질문 글씨를 옮겨 배경판 위에 다시 배치(선택지 그림은 지움).
+  // 선택지는 미니멀하게: 폭 80%, 높이 36px, 간격 54px, 글씨 13px(폰 390px 기준)
+  { id: 'concern', img: 'pages/p-5n.jpg', col: '스타일링 고민',
     zones: [
-      { kind: 'choice', value: '옷은 많은데 막상 입을 옷이 없다.', rect: [10.2, 45.2, 79.6, 7.9] },
-      { kind: 'choice', value: '잘맞는 메이크업을 모르겠다.',       rect: [10.2, 55.1, 79.6, 7.9] },
-      { kind: 'choice', value: '체형 보완하는 것이 어렵다.',         rect: [10.2, 65.1, 79.6, 7.9] },
-      { kind: 'choice', value: '내가 원하는 분위기가 나오지 않는다.', rect: [10.2, 75.0, 79.6, 7.9] },
+      { kind: 'choice', smore: true, value: '옷은 많은데 막상 입을 옷이 없다.', rect: [10, 53.22, 80, 5.54] },
+      { kind: 'choice', smore: true, value: '잘맞는 메이크업을 모르겠다.',       rect: [10, 61.53, 80, 5.54] },
+      { kind: 'choice', smore: true, value: '체형 보완하는 것이 어렵다.',         rect: [10, 69.84, 80, 5.54] },
+      { kind: 'choice', smore: true, value: '내가 원하는 분위기가 나오지 않는다.', rect: [10, 78.15, 80, 5.54] },
     ] },
 
-  { id: 'mood', img: 'pages/p-6.jpg', col: '무드 인지도',
+  // 무드: 스모어식 0~10 숫자 버튼. 이미지는 p-6n.jpg — 원본 p-6.jpg에서 숫자 줄·라벨·다음 버튼을 지우고 원래 배경 복원
+  // 버튼 줄은 원본 숫자 줄과 같은 폭·높이 중심(75.4%)에 놓고, 라벨은 스모어처럼 버튼 아래 20px 간격
+  { id: 'mood', img: 'pages/p-6n.jpg', col: '무드 인지도',
+    scale: { col: '무드 인지도', rect: [1.7, 73.0, 96.6, 8.95], from: 0, to: 10, left: '거의 모른다', right: '잘 알고 있다' },
     zones: [
-      ...SCALE.map((r, n) => ({ kind: 'scale', value: n, rect: r, round: true })),
-      { kind: 'next', rect: NEXT, require: ['무드 인지도'] },
+      { ...NEXT_BTN, require: ['무드 인지도'] },
     ] },
 
-  { id: 'profile', img: 'pages/p-7.jpg',
+  // 입력 페이지(성함·나이 / 연락처 / 가까운 역) — 시안 A2: 질문 글씨 78%로 줄인 이미지(p-7q/8q/9q, 입력칸 그림 없음)
+  // + 스모어 유리 입력칸(HTML, .field.glass). 입력칸은 질문 아래 16px, 여러 칸이면 8px 간격으로 세로로 쌓음
+  { id: 'profile', img: 'pages/p-7q.jpg',
     zones: [
-      { kind: 'field', col: '성함',    rect: [16, 53.2, 33.4, 5.9], fill: 'rgb(158,157,152)', ink: '#2c2a27' },
-      { kind: 'field', col: '출생연도', rect: [50.6, 53.2, 33.4, 5.9], fill: 'rgb(158,157,152)', ink: '#2c2a27' },
-      { kind: 'next', rect: NEXT, require: ['성함', '출생연도'] },
+      { kind: 'field', glass: true, col: '성함',    ph: '이름',   rect: [16, 48.41, 68, 6.15] },
+      { kind: 'field', glass: true, col: '출생연도', ph: '00년생', rect: [16, 55.79, 68, 6.15] },
+      { ...NEXT_BTN, require: ['성함', '출생연도'] },
     ] },
 
-  { id: 'phone', img: 'pages/p-8.jpg',
+  { id: 'phone', img: 'pages/p-8q.jpg',
     zones: [
-      { kind: 'field', col: '연락처', rect: [22.4, 49.8, 57.3, 6.4], fill: 'rgb(105,102,95)', ink: '#f3f1ec', type: 'tel', mode: 'numeric', align: 'left', format: 'phone' },
-      { kind: 'next', rect: NEXT, require: ['연락처'] },
+      // 연락처 칸은 질문 문장 폭(26.3~76.0%)에 맞춰 양옆 1%씩만 더 넓게
+      { kind: 'field', glass: true, col: '연락처', ph: '010-0000-0000', rect: [25.3, 48.41, 51.72, 6.15], type: 'tel', mode: 'numeric', format: 'phone' },
+      { ...NEXT_BTN, require: ['연락처'] },
     ] },
 
-  { id: 'station', img: 'pages/p-9.jpg', consent: true,
+  { id: 'station', img: 'pages/p-9q.jpg', consent: true,
     zones: [
-      { kind: 'field', col: '가까운 역', rect: [10.2, 49.8, 73.8, 6.4], fill: 'rgb(105,102,95)', ink: '#f3f1ec', align: 'left' },
-      { kind: 'next', rect: NEXT, require: ['가까운 역'], consent: true, submit: true },
+      { kind: 'field', glass: true, col: '가까운 역', ph: 'ex) 당산역', rect: [16, 48.41, 68, 6.15] },
+      { ...NEXT_BTN, require: ['가까운 역'], consent: true, submit: true },
     ] },
 ];
 
@@ -268,15 +380,21 @@ function render() {
   zonesOf(s).forEach((z, idx) => {
     if (z.kind === 'field') {
       const inp = document.createElement('input');
-      inp.className = 'field' + (z.align === 'left' ? ' left' : '');
-      inp.dataset.col = z.col; inp.dataset.fill = z.fill;
+      inp.className = 'field' + (z.glass ? ' glass' : '') + (z.align === 'left' ? ' left' : '');
+      inp.dataset.col = z.col;
       inp.type = z.type || 'text';
       if (z.mode) inp.inputMode = z.mode;
       if (z.format) inp.dataset.format = z.format;
-      inp.style.cssText = css(z.rect) + `;color:${z.ink};font-size:clamp(13px,4.4vw,20px)`;
       inp.value = state.answers[z.col] || '';
-      if (inp.value) inp.style.background = z.fill;
+      if (z.glass) { inp.placeholder = z.ph || ''; inp.style.cssText = css(z.rect); }
+      else {
+        inp.dataset.fill = z.fill;
+        inp.style.cssText = css(z.rect) + `;color:${z.ink};font-size:clamp(13px,4.4vw,20px)`;
+        if (inp.value) inp.style.background = z.fill;
+      }
       layer.appendChild(inp);
+    } else if (z.smore) {
+      layer.appendChild(smoreBtn(z, idx));
     } else {
       const b = document.createElement('button');
       b.className = 'hot' + (z.round ? ' round' : ''); b.type = 'button';
@@ -286,27 +404,255 @@ function render() {
     }
   });
 
-  if (s.consent) {
-    const c = document.createElement('div');
-    c.className = 'consent' + (state.consent ? '' : '');
-    c.innerHTML = `<button class="box${state.consent ? ' on' : ''}" type="button" aria-label="동의"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button><label><span class="policy-link">개인정보처리방침</span>을 확인하였으며 이에 동의합니다.</label>`;
-    layer.appendChild(c);
-  }
+  if (s.blocks) s.blocks.forEach(b => layer.appendChild(blockEl(b)));
+  if (s.labelsBy) zonesOf(s).forEach((z, i) => layer.appendChild(plabel(s, z, i)));
+  if (s.scale) layer.appendChild(scaleEl(s.scale, true));
+  if (s.consent) layer.appendChild(consentEl());
 
   $screen.replaceChildren(layer);
   $back.classList.toggle('show', state.i > 0);
+  refreshNext();
 }
 
-function go(i, dir = 'next') { state.i = i; render(); track('view', { dir }); }
-function next() { if (STEPS[state.i + 1]) go(state.i + 1); else finish(); }
+// 스모어 버튼 — '다음'은 '>' 아이콘 + 글자(필수 입력이 비어 있으면 스모어처럼 반투명 비활성), 선택지는 글자만(rect 위치)
+function smoreBtn(z, idx) {
+  const b = document.createElement('button');
+  b.className = 'hot smore-btn' + (z.kind === 'next' ? ' next' : ' choice'); b.type = 'button'; b.dataset.idx = idx;
+  if (z.rect) b.style.cssText = css(z.rect);
+  if (z.cy) b.style.top = `calc(${z.cy}% - var(--u) * 18)`;   // 미니멀 '다음' 버튼의 세로 중심 위치 바꾸기
+  if (z.w) { b.style.width = `calc(var(--u) * ${z.w})`; b.style.left = `calc(50% - var(--u) * ${z.w / 2})`; }   // 가로 폭만 바꾸기
+  b.innerHTML = z.kind === 'next'
+    ? `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg><span>${z.text}</span>`
+    : `<span>${z.value}</span>`;
+  if (z.require && !z.require.every(filled)) b.classList.add('disabled');
+  return b;
+}
+function refreshNext() {
+  const b = $screen.querySelector('.layer .smore-btn'); if (!b) return;
+  const z = zonesOf(STEPS[state.i])[+b.dataset.idx];
+  b.classList.toggle('disabled', !!(z.require && !z.require.every(filled)));
+}
 
-function finish() {
-  state.busy = true; state.submitted = true;
+// HTML 블록(좌표는 폰 390×650px 기준 px)
+function blockEl(b) {
+  const d = document.createElement('div'); d.className = 'blk';
+  const [x, y, w, h] = b.box;
+  d.style.cssText = `left:calc(var(--u)*${x});top:calc(var(--u)*${y});width:calc(var(--u)*${w});height:calc(var(--u)*${h})`;
+  d.innerHTML = b.html; return d;
+}
+
+// 사진 아래 이름 (위치: 사진 가운데, 그 줄 사진 아래 끝 + 10px). box를 주면 그 조각 안 좌표로
+function plabel(s, z, i, box) {
+  const d = document.createElement('div'); d.className = 'plabel'; d.textContent = z.value;
+  let cx = z.rect[0] + z.rect[2] / 2, bot = s.labelsBy(state.answers)[Math.floor(i / 2)];
+  if (box) { const [x0, y0, x1, y1] = box; cx = (cx - x0) / (x1 - x0) * 100; bot = (bot - y0) / (y1 - y0) * 100; }
+  d.style.left = cx + '%'; d.style.top = `calc(${bot}% + var(--sw) * 10 / 390)`;
+  return d;
+}
+
+const filled = c => { const v = state.answers[c]; return v !== undefined && v !== null && String(v).trim() !== ''; };
+
+/* 스모어 0~10 숫자 버튼 동작 (FormScaleNumberButton 그대로) — 누르면 선택(살짝 떠오르며 1.1배), 같은 숫자를 다시 누르면 선택 해제 */
+function scaleEl(sc, live) {
+  const el = document.createElement('div'); el.className = 'scale-pc';
+  el.style.cssText = css(sc.rect);
+  const nums = document.createElement('div'); nums.className = 'nums';
+  for (let n = sc.from; n <= sc.to; n++) {
+    const b = document.createElement('div'); b.className = 'snum'; b.textContent = n; b.dataset.n = n;
+    if (filled(sc.col) && +state.answers[sc.col] === n) b.classList.add('selected');
+    nums.appendChild(b);
+  }
+  el.appendChild(nums);
+  el.insertAdjacentHTML('beforeend', `<div class="labels"><span class="l">${sc.left}</span><span class="r">${sc.right}</span></div>`);
+  if (live) nums.addEventListener('click', e => {
+    const b = e.target.closest('.snum'); if (!b || state.busy) return;
+    const n = +b.dataset.n, same = filled(sc.col) && +state.answers[sc.col] === n;
+    if (same) delete state.answers[sc.col]; else state.answers[sc.col] = n;
+    nums.querySelectorAll('.snum').forEach(x => x.classList.toggle('selected', !same && x === b));
+    track('answer', { col: sc.col, answer: same ? '' : n });
+    refreshNext();
+  });
+  return el;
+}
+
+function consentEl() {
+  const c = document.createElement('div');
+  c.className = 'consent';
+  c.innerHTML = `<button class="box${state.consent ? ' on' : ''}" type="button" aria-label="동의"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></button><label><span class="policy-link">개인정보처리방침</span>을 확인하였으며 이에 동의합니다.</label>`;
+  return c;
+}
+
+/* =========================================================
+   스모어식 화면 전환 (레퍼런스: 기존 스모어 폼 smore.im/form/g7t2ebUcAw — 전환 방식 'zoom')
+   - 평소엔 원본 페이지 이미지를 그대로 보여 줌 → 디자인 불변
+   - 넘어가는 순간에만 배경판(bg.jpg) 위에 페이지를 요소 조각으로 나눠 띄움
+     · 나가는 조각: 줄마다 0.07초 간격으로 작아지며(10%) 사라짐, 0.8초
+     · 들어오는 조각: 0.42초 뒤부터 줄마다 0.095초 간격으로 30% → 100% 커지며 나타남, 0.8초
+     · 고르면: 고른 것 1.04배, 나머지 선택지 0.96배·흐리게(0.18초) / '다음'은 1.04배(0.2초)
+   - 조각 좌표(%) [x0,y0,x1,y1], z = 연결된 탭영역 번호
+   ========================================================= */
+const FX_PIECES = {
+  'p-1n': [{r:[18.3,10.6,81,25.3]}, {r:[18.3,27.5,81,77.8]}],
+  'bg': [],   // HTML로만 구성된 페이지(프로세스) — 이미지 조각 없음
+  'p-2b': [{r:[33.8,23.7,68.4,29.1]}, {r:[9.6,32.2,45.7,65],z:0}, {r:[53.3,32.2,89.3,65],z:1}],
+  'p-3x': [{r:[23.8,10.4,76,13.5]}, {r:[9.6,20,45.6,44.2],z:0}, {r:[54.2,20,90.2,44.2],z:1}, {r:[9.6,45.4,45.6,69.6],z:2}, {r:[54.2,45.4,90.2,69.6],z:3}, {r:[9.6,70.8,45.6,95],z:4}, {r:[54.2,70.8,90.2,95],z:5}],
+  'p-4x': [{r:[23.8,10.4,76,13.5]}, {r:[9.6,20,45.6,44.2],z:0}, {r:[54.2,20,90.2,44.2],z:1}, {r:[9.6,45.4,45.6,69.6],z:2}, {r:[54.2,45.4,90.2,69.6],z:3}, {r:[9.6,70.8,45.6,95],z:4}, {r:[54.2,70.8,90.2,95],z:5}],
+  'p-5n': [{r:[9.63,16.11,90.37,37.78]}, {r:[13.06,43.56,86.76,46.89]}],
+  'p-6n': [{r:[15.2,11.8,84.8,61.1]}, {r:[20.6,65.3,79.3,68.3]}],
+  'p-7q': [{r:[17.87,40.89,77.31,46.28]}],
+  'p-8q': [{r:[25.74,40.89,76.57,46.28]}],
+  'p-9q': [{r:[16.48,40.94,84.72,46.28]}],
+};
+const EASE = 'cubic-bezier(.19,1,.22,1)';          // 스모어 질문 전환 곡선
+const EASE_OUT = 'cubic-bezier(.165,.84,.44,1)';   // 스모어 카드 퇴장 곡선
+const $plate = document.getElementById('plate');
+const MOTION = !matchMedia('(prefers-reduced-motion: reduce)').matches && typeof Element.prototype.animate === 'function'
+  && (CSS.supports('mask-image', 'url("a.png")') || CSS.supports('-webkit-mask-image', 'url("a.png")'));
+const keyOf = src => src.replace(/^pages\//, '').replace(/\.jpg$/, '');
+const maskOf = src => `pages/m-${keyOf(src)}.png`;
+const wait = ms => new Promise(r => setTimeout(r, ms));
+const anim = (el, frames, opt) => el.animate(frames, { fill: 'both', ...opt }).finished.catch(() => {});
+const stopAnims = el => el.getAnimations().forEach(a => a.cancel());
+
+// 이미지 미리 받아 디코드 — 전환 중 빈 화면·깜빡임 방지
+const loaded = {};
+function load(src) {
+  return loaded[src] || (loaded[src] = new Promise(res => {
+    const im = new Image();
+    im.onload = () => (im.decode ? im.decode() : Promise.resolve()).catch(() => {}).then(res);
+    im.onerror = res;
+    im.src = src;
+  }));
+}
+const ready = s => Promise.race([Promise.all([load(imgOf(s)), FX_PIECES[keyOf(imgOf(s))].length ? load(maskOf(imgOf(s))) : null, load('pages/bg.jpg'),
+  ...(s.blocks ? ['proc-s1a', 'proc-s1b', 'proc-s2a', 'proc-s2b'].map(k => load(`pages/${k}.jpg`)) : [])]), wait(2000)]);
+
+// 현재 답변 상태(선택 테두리·입력한 글자 포함)로 페이지를 조각으로 만듦
+function buildFx(s) {
+  const src = imgOf(s), zones = zonesOf(s);
+  const root = document.createElement('div'); root.className = 'fx';
+  const pieces = [];
+  FX_PIECES[keyOf(src)].forEach(p => {
+    const [x0, y0, x1, y1] = p.r, w = x1 - x0, h = y1 - y0;
+    const local = r => `left:${(r[0] - x0) / w * 100}%;top:${(r[1] - y0) / h * 100}%;width:${r[2] / w * 100}%;height:${r[3] / h * 100}%`;
+    const el = document.createElement('div'); el.className = 'piece';
+    el.style.cssText = `left:${x0}%;top:${y0}%;width:${w}%;height:${h}%`;
+    const inner = document.createElement('div'); inner.className = 'pc-in';
+    inner.style.cssText = `left:${-x0 / w * 100}%;top:${-y0 / h * 100}%;width:${10000 / w}%;height:${10000 / h}%;`
+      + `background-image:url("${src}");-webkit-mask-image:url("${maskOf(src)}");mask-image:url("${maskOf(src)}")`;
+    el.appendChild(inner);
+    const z = p.z != null ? zones[p.z] : null;
+    if (z && s.labelsBy) el.appendChild(plabel(s, z, p.z, p.r));   // 이름도 사진 조각과 함께 움직임
+    if (z && z.kind === 'field' && state.answers[z.col]) {
+      const f = document.createElement('div'); f.className = 'field fake' + (z.align === 'left' ? ' left' : '');
+      f.textContent = state.answers[z.col];
+      f.style.cssText = local(z.rect) + `;background:${z.fill};color:${z.ink};font-size:clamp(13px,4.4vw,20px)`;
+      el.appendChild(f);
+    }
+    root.appendChild(el);
+    pieces.push({ el, z: p.z, kind: z && z.kind, top: y0, s: 1, o: 1 });
+  });
+  if (s.blocks) s.blocks.forEach(b => { const c = blockEl(b); root.appendChild(c); pieces.push({ el: c, top: b.box[1] / 6.5, s: 1, o: 1 }); });
+  if (s.scale) { const c = scaleEl(s.scale, false); root.appendChild(c); pieces.push({ el: c, top: s.scale.rect[1], s: 1, o: 1 }); }
+  zones.forEach(z => { if (z.kind === 'field' && z.glass) {   // 유리 입력칸(입력한 글자 또는 안내 글씨 그대로)
+    const v = state.answers[z.col], f = document.createElement('div');
+    f.className = 'field glass fake' + (v ? '' : ' empty'); f.textContent = v || z.ph || ''; f.style.cssText = css(z.rect);
+    root.appendChild(f); pieces.push({ el: f, top: z.rect[1], s: 1, o: 1 });
+  } });
+  zones.forEach((z, idx) => { if (z.smore) { const b = smoreBtn(z, idx); root.appendChild(b); pieces.push({ el: b, z: idx, kind: z.kind, top: z.rect ? z.rect[1] : 84, s: 1, o: 1 }); } });
+  if (s.consent) { const c = consentEl(); root.appendChild(c); pieces.push({ el: c, top: 90.7, s: 1, o: 1 }); }
+  // 같은 줄(윗변 차이 1.5% 이내)은 같은 순번 → 스모어처럼 위에서부터 줄 단위로 차례차례
+  let order = -1, last = -99;
+  pieces.slice().sort((a, b) => a.top - b.top).forEach(p => { if (p.top - last > 1.5) { order++; last = p.top; } p.order = order; });
+  return { root, pieces };
+}
+
+// 고른 순간 반응 (스모어와 같은 값)
+async function feedback(fx, idx) {
+  const hit = fx.pieces.find(p => p.z === idx);
+  if (!hit) return;
+  if (hit.kind === 'next') {
+    hit.s = 1.04;
+    await anim(hit.el, [{ transform: 'scale(1)' }, { transform: 'scale(1.04)' }], { duration: 200, easing: 'ease' });
+    return;
+  }
+  const others = fx.pieces.filter(p => p !== hit && (p.kind === 'pick' || p.kind === 'choice' || p.kind === 'scale'));
+  hit.s = 1.04; others.forEach(p => { p.s = .96; p.o = .7; });
+  await Promise.all([
+    anim(hit.el, [{ transform: 'scale(1)' }, { transform: 'scale(1.04)' }], { duration: 180, easing: 'ease' }),
+    ...others.map(p => anim(p.el, [{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(.96)', opacity: .7 }], { duration: 180, easing: 'ease' })),
+  ]);
+}
+const playOut = (fx, start) => Promise.all(fx.pieces.map(p => { stopAnims(p.el);
+  if (start) {   // 스모어 첫 화면 퇴장: 왼쪽으로 화면 폭만큼 밀리며 0.7배·투명 (0.08초 간격, 0.4초)
+    const w = $screen.getBoundingClientRect().width;
+    return anim(p.el, [{ transform: `scale(${p.s})`, opacity: p.o }, { transform: `translateX(${-w}px) scale(.7)`, opacity: 0 }], { duration: 400, delay: 80 * p.order, easing: 'ease' });
+  }
+  return anim(p.el, [{ transform: `scale(${p.s})`, opacity: p.o }, { transform: 'scale(.1)', opacity: 0 }], { duration: 800, delay: 70 * p.order, easing: EASE }); }));
+const playIn = (fx, base) => Promise.all(fx.pieces.map(p =>
+  anim(p.el, [{ transform: 'scale(.3)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { duration: 800, delay: base + 95 * p.order, easing: EASE })));
+
+let popSeq = 0;
+async function transition(to, dir, idx) {
+  popSeq++;
+  state.busy = true; $back.classList.remove('show');
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  if (!MOTION) { state.i = to; render(); track('view', { dir }); state.busy = false; return; }
+  const readyNext = ready(STEPS[to]);
+  const out = buildFx(STEPS[state.i]);
+  $screen.replaceChildren(out.root);                 // 원본 → 조각 (보이는 모습 동일)
+  if (idx != null) { await feedback(out, idx); await wait(180); }
+  const fromStart = STEPS[state.i].id === 'intro';
+  state.i = to; track('view', { dir });
+  const t0 = performance.now();
+  const outDone = playOut(out, fromStart);
+  await readyNext;
+  const inn = buildFx(STEPS[to]);
+  $screen.appendChild(inn.root);
+  await Promise.all([outDone, playIn(inn, Math.max(0, 420 - (performance.now() - t0)))]);
+  render();                                          // 조각 → 원본 (보이는 모습 동일)
+  state.busy = false;
+}
+
+// 다음으로 넘어가지 않는 선택(성별·무드 숫자)은 제자리에서 톡 튀는 반응만
+async function popSelect(idx) {
+  if (!MOTION) return;
+  const id = ++popSeq, fx = buildFx(STEPS[state.i]);
+  const hit = fx.pieces.find(p => p.z === idx); if (!hit) return;
+  $screen.replaceChildren(fx.root);
+  const up = hit.kind === 'scale' ? 'translateY(-3px) scale(1.1)' : 'scale(1.04)';   // 스모어 숫자 버튼·선택지 값
+  await anim(hit.el, [{ transform: 'none' }, { transform: up, offset: .4 }, { transform: 'none' }], { duration: 420, easing: 'ease' });
+  if (id === popSeq && !state.busy) render();
+}
+
+function next(idx) { if (STEPS[state.i + 1]) transition(state.i + 1, 'next', idx); else finish(idx); }
+
+async function finish(idx) {
+  state.busy = true; state.submitted = true; popSeq++;
   track('submit', { answers: { ...state.answers }, consent: state.consent });
   try { sessionStorage.removeItem(SID_KEY); } catch (e) {}
   $back.classList.remove('show');
-  $loading.classList.add('show');
-  setTimeout(() => { $loading.classList.remove('show'); $done.classList.add('show'); state.busy = false; }, CONFIG.LOADING_MS);
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  if (MOTION) {
+    const out = buildFx(STEPS[state.i]);
+    $screen.replaceChildren(out.root);
+    if (idx != null) { await feedback(out, idx); await wait(180); }
+    playOut(out);
+    await wait(450);
+    $loading.classList.add('show');
+    await anim($loading, [{ opacity: 0 }, { opacity: 1 }], { duration: 600, easing: 'ease' });   // 스모어 로딩 페이지
+  } else $loading.classList.add('show');
+  await wait(CONFIG.LOADING_MS);
+  $done.classList.add('show');
+  if (MOTION) {
+    load('pages/done-48.jpg');
+    await Promise.all([   // 스모어 결과 화면: 아래에서 밀려 올라오고, 로딩 화면은 뒤로 작아짐
+      anim($done, [{ transform: 'translate3d(0,100%,0)' }, { transform: 'none' }], { duration: 1100, delay: 100, easing: EASE }),
+      anim($loading, [{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(.75)', opacity: .8 }], { duration: 1000, easing: EASE_OUT }),
+    ]);
+  }
+  $loading.classList.remove('show');
+  state.busy = false;
 }
 
 /* 클릭 처리 */
@@ -329,9 +675,14 @@ $screen.addEventListener('click', e => {
   const z = zonesOf(s)[+b.dataset.idx];
 
   if (z.kind === 'next') {
-    if (z.require && !z.require.every(c => (state.answers[c] || '').toString().trim())) {
-      const empty = z.require.find(c => !(state.answers[c] || '').toString().trim());
+    if (z.require && !z.require.every(filled)) {
+      const empty = z.require.find(c => !filled(c));
       const f = $screen.querySelector(`.field[data-col="${empty}"]`); if (f) f.focus();
+      const card = $screen.querySelector('.layer .scale-pc');
+      if (card && s.scale && s.scale.col === empty && MOTION)   // 스모어 shake 300ms
+        card.animate([{ transform: 'none' }, { transform: 'translateX(-4px)', offset: .1 }, { transform: 'translateX(4px)', offset: .2 }, { transform: 'translateX(-4px)', offset: .3 },
+          { transform: 'translateX(4px)', offset: .4 }, { transform: 'translateX(-4px)', offset: .5 }, { transform: 'translateX(4px)', offset: .6 }, { transform: 'translateX(-4px)', offset: .7 },
+          { transform: 'translateX(2px)', offset: .8 }, { transform: 'translateX(-2px)', offset: .9 }, { transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.455,.03,.515,.955)' });
       return;
     }
     if (z.consent && !state.consent) {
@@ -339,7 +690,7 @@ $screen.addEventListener('click', e => {
       if (ce) { ce.classList.remove('warn'); void ce.offsetWidth; ce.classList.add('warn'); }
       return;
     }
-    if (z.submit) finish(); else next();
+    if (z.submit) finish(+b.dataset.idx); else next(+b.dataset.idx);
     return;
   }
   if (z.kind === 'pick' || z.kind === 'scale' || z.kind === 'choice') {
@@ -347,7 +698,7 @@ $screen.addEventListener('click', e => {
     track('answer', { col: s.col, answer: z.value });
     $screen.querySelectorAll('.hot').forEach(x => x.classList.remove('sel'));
     b.classList.add('sel');
-    if (z.auto || z.kind === 'choice') { state.busy = true; setTimeout(() => { state.busy = false; next(); }, 240); }
+    if (z.auto || z.kind === 'choice') next(+b.dataset.idx); else popSelect(+b.dataset.idx);
   }
 });
 
@@ -371,12 +722,13 @@ $screen.addEventListener('input', e => {
     f.value = fmtPhone(f.value, del);
   }
   state.answers[f.dataset.col] = f.value;
-  f.style.background = f.value.length ? f.dataset.fill : 'transparent';
+  if (f.dataset.fill) f.style.background = f.value.length ? f.dataset.fill : 'transparent';
+  refreshNext();
 });
 // 칸을 누르면(커서 깜빡일 때) 원본 예시 글씨를 즉시 가림
 $screen.addEventListener('focusin', e => {
   const f = e.target.closest('.field'); if (!f) return;
-  f.style.background = f.dataset.fill;
+  if (f.dataset.fill) f.style.background = f.dataset.fill;
   // 연락처 칸: 누르면 '010-' 자동 표시
   if (f.dataset.format === 'phone' && !f.value) {
     f.value = '010-';
@@ -391,7 +743,8 @@ $screen.addEventListener('focusout', e => {
     f.value = '';
     state.answers[f.dataset.col] = '';
   }
-  f.style.background = f.value.length ? f.dataset.fill : 'transparent';
+  if (f.dataset.fill) f.style.background = f.value.length ? f.dataset.fill : 'transparent';
+  refreshNext();
 });
 $screen.addEventListener('keydown', e => {
   if (e.key !== 'Enter' || !e.target.closest('.field')) return;
@@ -401,23 +754,58 @@ $screen.addEventListener('keydown', e => {
   if (idx < fields.length - 1) fields[idx + 1].focus(); else e.target.blur();
 });
 
-$back.addEventListener('click', () => { if (!state.busy && state.i > 0) go(state.i - 1, 'back'); });
+$back.addEventListener('click', () => { if (!state.busy && state.i > 0) transition(state.i - 1, 'back'); });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden' && !state.submitted) track('leave'); });
 
 /* 개인정보처리방침 팝업 */
 const $modal = document.getElementById('modal');
 document.getElementById('policyBody').textContent = POLICY;
-function openModal() { $modal.classList.add('show'); track('policy_open'); }
-function closeModal() { $modal.classList.remove('show'); }
+// 스모어 약관 카드: 어두운 배경 0.4초 페이드 + 카드가 아래에서 0.9초 동안 올라옴 / 닫을 땐 아래로 내려감
+const $card = $modal.querySelector('.card');
+let modalClosing = false;
+function openModal() {
+  if ($modal.classList.contains('show')) return;
+  $modal.classList.add('show'); track('policy_open');
+  if (!MOTION) return;
+  anim($modal, [{ backgroundColor: 'rgba(0,0,0,0)' }, { backgroundColor: 'rgba(0,0,0,.62)' }], { duration: 400, easing: 'ease' });
+  anim($card, [{ transform: 'translate3d(0,800px,0)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 900, easing: EASE });
+}
+async function closeModal() {
+  if (modalClosing || !$modal.classList.contains('show')) return;
+  if (MOTION) {
+    modalClosing = true;
+    await Promise.all([
+      anim($modal, [{ backgroundColor: 'rgba(0,0,0,.62)' }, { backgroundColor: 'rgba(0,0,0,0)' }], { duration: 400, easing: 'ease' }),
+      anim($card, [{ transform: 'none', opacity: 1 }, { opacity: 0, offset: .4 }, { transform: 'translate3d(0,800px,0)', opacity: 0 }], { duration: 900, easing: EASE_OUT }),
+    ]);
+    stopAnims($modal); stopAnims($card); modalClosing = false;
+  }
+  $modal.classList.remove('show');
+}
 document.getElementById('policyClose').addEventListener('click', closeModal);
 $modal.addEventListener('click', e => { if (e.target === $modal) closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && $modal.classList.contains('show')) closeModal(); });
 
-/* 시작 + 프리로드 */
-render();
-track('view', { dir: 'start' });
-['pages/p-1.jpg','pages/p-2.jpg','pages/p-3.jpg','pages/p-4.jpg','pages/p-5.jpg','pages/p-6.jpg','pages/p-7.jpg','pages/p-8.jpg','pages/p-9.jpg']
-  .forEach(src => { const i = new Image(); i.src = src; });
+/* 시작 — 스모어 첫 화면처럼 배경이 0.8초 페이드인, 요소들이 아래에서 차례로 떠오름(0.15초 간격, 1.2초) */
+async function start() {
+  track('view', { dir: 'start' });
+  if (!MOTION) { $plate.style.opacity = 1; render(); return; }
+  state.busy = true;
+  await ready(STEPS[0]);
+  const fx = buildFx(STEPS[0]);
+  $screen.replaceChildren(fx.root);
+  const rise = $screen.getBoundingClientRect().width * 100 / 390;   // 스모어 100px(폰 폭 기준)
+  anim($plate, [{ opacity: 0 }, { opacity: 1 }], { duration: 800, easing: 'ease' });
+  await Promise.all(fx.pieces.map(p => anim(p.el, [{ transform: `translate3d(0,${rise}px,0)`, opacity: 0 }, { transform: 'none', opacity: 1 }],
+    { duration: 1200, delay: 150 * p.order, easing: 'cubic-bezier(.075,.82,.165,1)' })));
+  render();
+  state.busy = false;
+}
+start();
+// 나머지 페이지·조각 마스크 미리 받기
+['p-1n','p-2b','p-3x','p-4x','p-5n','p-6n','p-7q','p-8q','p-9q'].forEach(k => { load(`pages/${k}.jpg`); load(`pages/m-${k}.png`); });
+load('pages/done-48.jpg');
+['proc-s1a','proc-s1b','proc-s2a','proc-s2b'].forEach(k => load(`pages/${k}.jpg`));
 </script>
 </body>
 </html>
