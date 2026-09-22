@@ -125,6 +125,12 @@
   .back { position: absolute; top: 2%; left: 3%; z-index: 6; width: 34px; height: 34px; border: 0; border-radius: 50%; background: rgba(0,0,0,.16); color: #fff; display: none; place-items: center; cursor: pointer; opacity: .65; }
   .back svg { width: 20px; height: 20px; }
   .back.show { display: grid; }
+  /* 상단 진행바(시안 2): 얇은 바 + N/7 */
+  .prog { position: absolute; inset: 0; z-index: 5; display: none; pointer-events: none; }
+  .prog.show { display: block; }
+  .prog-track { position: absolute; top: 0; left: 0; right: 0; height: calc(var(--sw) * 3.5 / 390); background: rgba(255,255,255,.16); }
+  .prog-fill { height: 100%; background: #fff; width: 0; transition: width .45s cubic-bezier(.19,1,.22,1); }
+  .prog-cnt { position: absolute; top: 2%; right: 4%; font-family: 'Pretendard', var(--font); font-size: calc(var(--sw) * 10.5 / 390); color: rgba(255,255,255,.62); letter-spacing: .02em; }
 
   /* 완료 / 제출 중 */
   .cover { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 18px; padding: 10%;
@@ -191,6 +197,7 @@
     <button class="back" id="back" type="button" aria-label="이전">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
     </button>
+    <div class="prog" id="prog"><div class="prog-track"><div class="prog-fill" id="progFill"></div></div><div class="prog-cnt" id="progCnt"></div></div>
     <img class="page" id="plate" src="pages/bg.jpg" alt="" style="opacity:0">
     <div id="screen"></div>
     <div class="cover" id="loading"><div class="dots"><i></i><i></i><i></i></div><p>제출 중</p></div>
@@ -361,6 +368,14 @@ function track(event, extra = {}) {
 const $screen = document.getElementById('screen');
 const $back = document.getElementById('back');
 const $loading = document.getElementById('loading');
+const $prog = document.getElementById('prog'), $progFill = document.getElementById('progFill'), $progCnt = document.getElementById('progCnt');
+const PROG_FIRST = 2, PROG_TOTAL = 7;   // gender(i=2) ~ station(i=8) 7단계
+function updateProg() {
+  const pstep = state.i - PROG_FIRST + 1;          // gender=1 … station=7
+  const showProg = pstep >= 1 && pstep <= PROG_TOTAL;
+  $prog.classList.toggle('show', showProg);
+  if (showProg) { $progFill.style.width = (pstep / PROG_TOTAL * 100) + '%'; $progCnt.textContent = pstep + ' / ' + PROG_TOTAL; }
+}
 const $done = document.getElementById('done');
 const EDIT = params.has('edit');
 if (EDIT) document.body.classList.add('edit');
@@ -411,6 +426,7 @@ function render() {
 
   $screen.replaceChildren(layer);
   $back.classList.toggle('show', state.i > 0);
+  updateProg();
   refreshNext();
 }
 
@@ -586,11 +602,11 @@ async function feedback(fx, idx) {
 const playOut = (fx, start) => Promise.all(fx.pieces.map(p => { stopAnims(p.el);
   if (start) {   // 스모어 첫 화면 퇴장: 왼쪽으로 화면 폭만큼 밀리며 0.7배·투명 (0.08초 간격, 0.4초)
     const w = $screen.getBoundingClientRect().width;
-    return anim(p.el, [{ transform: `scale(${p.s})`, opacity: p.o }, { transform: `translateX(${-w}px) scale(.7)`, opacity: 0 }], { duration: 400, delay: 80 * p.order, easing: 'ease' });
+    return anim(p.el, [{ transform: `scale(${p.s})`, opacity: p.o }, { transform: `translateX(${-w}px) scale(.7)`, opacity: 0 }], { duration: 320, delay: 64 * p.order, easing: 'ease' });
   }
-  return anim(p.el, [{ transform: `scale(${p.s})`, opacity: p.o }, { transform: 'scale(.1)', opacity: 0 }], { duration: 800, delay: 70 * p.order, easing: EASE }); }));
+  return anim(p.el, [{ transform: `scale(${p.s})`, opacity: p.o }, { transform: 'scale(.1)', opacity: 0 }], { duration: 640, delay: 56 * p.order, easing: EASE }); }));
 const playIn = (fx, base) => Promise.all(fx.pieces.map(p =>
-  anim(p.el, [{ transform: 'scale(.3)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { duration: 800, delay: base + 95 * p.order, easing: EASE })));
+  anim(p.el, [{ transform: 'scale(.3)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { duration: 640, delay: base + 76 * p.order, easing: EASE })));
 
 let popSeq = 0;
 async function transition(to, dir, idx) {
@@ -601,15 +617,16 @@ async function transition(to, dir, idx) {
   const readyNext = ready(STEPS[to]);
   const out = buildFx(STEPS[state.i]);
   $screen.replaceChildren(out.root);                 // 원본 → 조각 (보이는 모습 동일)
-  if (idx != null) { await feedback(out, idx); await wait(180); }
+  if (idx != null) { await feedback(out, idx); await wait(144); }
   const fromStart = STEPS[state.i].id === 'intro';
   state.i = to; track('view', { dir });
+  updateProg();                                      // 진행바는 전환과 동시에 채워지도록
   const t0 = performance.now();
   const outDone = playOut(out, fromStart);
   await readyNext;
   const inn = buildFx(STEPS[to]);
   $screen.appendChild(inn.root);
-  await Promise.all([outDone, playIn(inn, Math.max(0, 420 - (performance.now() - t0)))]);
+  await Promise.all([outDone, playIn(inn, Math.max(0, 336 - (performance.now() - t0)))]);
   render();                                          // 조각 → 원본 (보이는 모습 동일)
   state.busy = false;
 }
@@ -632,13 +649,14 @@ async function finish(idx) {
   track('submit', { answers: { ...state.answers }, consent: state.consent });
   try { sessionStorage.removeItem(SID_KEY); } catch (e) {}
   $back.classList.remove('show');
+  $prog.classList.remove('show');
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
   if (MOTION) {
     const out = buildFx(STEPS[state.i]);
     $screen.replaceChildren(out.root);
-    if (idx != null) { await feedback(out, idx); await wait(180); }
+    if (idx != null) { await feedback(out, idx); await wait(144); }
     playOut(out);
-    await wait(450);
+    await wait(360);
     $loading.classList.add('show');
     await anim($loading, [{ opacity: 0 }, { opacity: 1 }], { duration: 600, easing: 'ease' });   // 스모어 로딩 페이지
   } else $loading.classList.add('show');
