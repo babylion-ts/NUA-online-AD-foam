@@ -305,7 +305,7 @@ const STEPS = [
   { id: 'profile', img: 'pages/p-7q.jpg',
     zones: [
       { kind: 'field', glass: true, col: '성함',    ph: '이름',   rect: [16, 48.41, 68, 6.15] },
-      { kind: 'field', glass: true, col: '출생연도', ph: '00년생', rect: [16, 55.79, 68, 6.15] },
+      { kind: 'field', glass: true, col: '출생연도', ph: '예: 2005', rect: [16, 55.79, 68, 6.15], type: 'text', mode: 'numeric', format: 'year' },
       { ...NEXT_BTN, require: ['성함', '출생연도'] },
     ] },
 
@@ -739,6 +739,7 @@ $screen.addEventListener('input', e => {
     const del = e.inputType && e.inputType.indexOf('delete') === 0;
     f.value = fmtPhone(f.value, del);
   }
+  if (f.dataset.format === 'year') f.value = f.value.replace(/\D/g, '').slice(0, 4);
   state.answers[f.dataset.col] = f.value;
   if (f.dataset.fill) f.style.background = f.value.length ? f.dataset.fill : 'transparent';
   refreshNext();
