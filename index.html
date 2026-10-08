@@ -113,9 +113,50 @@
     box-shadow: 0 2px 10px 3px rgba(0,0,0,.032); caret-color: #fff;
     transition: border-color .3s ease, background-color .4s ease, box-shadow .3s ease; }
   .field.glass::placeholder { color: rgba(255,255,255,.6); }
+  .field-note { --u: calc(var(--sw) / 390); position: absolute; display: flex; align-items: center; justify-content: center;
+    text-align: center; white-space: nowrap; font-family: var(--font); font-size: calc(var(--u) * 9.5); line-height: 1.3;
+    color: rgba(255,255,255,.55); letter-spacing: -.03em; pointer-events: none; }
   .field.glass:focus { border-color: rgba(255,255,255,.9); background: rgba(255,255,255,.3); box-shadow: 0 2px 10px 5px rgba(0,0,0,.032); }
   .fx .field.glass.fake { display: flex; align-items: center; justify-content: flex-start; padding: 0 calc(var(--u) * 12); white-space: nowrap; overflow: hidden; }
   .fx .field.glass.fake.empty { color: rgba(255,255,255,.6); }
+  /* 출생연도 휠(드럼) 피커 — 시안1 인라인 글라스 */
+  /* 출생연도 — 컴팩트 필드 + 탭하면 드롭다운 휠(시안2) */
+  .wheel-wrap { --u: calc(var(--sw) / 390); position: absolute; inset: 0; pointer-events: none; z-index: 4; }
+  .wheel-wrap > * { pointer-events: auto; }
+  .wheel-field { position: absolute; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 calc(var(--u) * 14); border: 1px solid rgba(255,255,255,.63); background: rgba(255,255,255,.22);
+    border-radius: calc(var(--u) * 10); color: #fff; font-size: calc(var(--u) * 14); font-family: var(--font);
+    cursor: pointer; -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    transition: border-color .2s ease, background-color .2s ease; }
+  .wheel-field.empty .wheel-val { color: rgba(255,255,255,.6); }
+  .wheel-wrap.open .wheel-field { border-color: rgba(255,255,255,.95); background: rgba(255,255,255,.3); }
+  .wheel-chev { opacity: .7; font-size: calc(var(--u) * 11); transition: transform .2s ease; }
+  .wheel-wrap.open .wheel-chev { transform: rotate(180deg); }
+  .wheel-back { position: absolute; inset: 0; display: none; }
+  .wheel-wrap.open .wheel-back { display: block; }
+  .wheel-drop { position: absolute; display: none; overflow: hidden; border-radius: calc(var(--u) * 12);
+    background: rgba(28,25,22,.98); border: 1px solid rgba(255,255,255,.14);
+    box-shadow: 0 calc(var(--u) * 8) calc(var(--u) * 26) rgba(0,0,0,.5); z-index: 6; }
+  .wheel-wrap.open .wheel-drop { display: block; }
+  .wheel-scroll { position: absolute; inset: 0; overflow-y: auto; scroll-snap-type: y mandatory;
+    padding: calc(var(--u) * 64) 0; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .wheel-scroll::-webkit-scrollbar { display: none; }
+  .wheel-item { height: calc(var(--u) * 40); display: flex; align-items: center; justify-content: center;
+    scroll-snap-align: center; color: rgba(255,255,255,.5); font-size: calc(var(--u) * 16); font-weight: 400;
+    font-family: var(--font); letter-spacing: -.02em; cursor: pointer; user-select: none; -webkit-user-select: none;
+    transition: color .15s ease, transform .15s ease; }
+  .wheel-item.on { color: #fff; font-weight: 700; transform: scale(1.12); }
+  .wheel-item.placeholder { color: rgba(255,255,255,.5); }
+  .wheel-band { position: absolute; left: 0; right: 0; top: calc(50% - var(--u) * 20); height: calc(var(--u) * 40);
+    background: rgba(255,255,255,.1); border-top: 1px solid rgba(255,255,255,.35); border-bottom: 1px solid rgba(255,255,255,.35);
+    pointer-events: none; z-index: 1; }
+  .wheel-fade { position: absolute; left: 0; right: 0; height: 30%; pointer-events: none; z-index: 2; }
+  .wheel-fade.t { top: 0; background: linear-gradient(rgba(28,25,22,.98), rgba(28,25,22,0)); }
+  .wheel-fade.b { bottom: 0; background: linear-gradient(rgba(28,25,22,0), rgba(28,25,22,.98)); }
+  .wheel-fake { --u: calc(var(--sw) / 390); position: absolute; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 calc(var(--u) * 14); border-radius: calc(var(--u) * 10); background: rgba(255,255,255,.22); border: 1px solid rgba(255,255,255,.63);
+    color: #fff; font-size: calc(var(--u) * 14); font-family: var(--font); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  .wheel-fake.empty { color: rgba(255,255,255,.6); }
 
   /* 디버그(?edit=1): 탭 영역 표시 */
   .edit .hot { background: rgba(241,84,31,.3); box-shadow: inset 0 0 0 1px #f1541f; }
@@ -305,21 +346,23 @@ const STEPS = [
   { id: 'profile', img: 'pages/p-7q.jpg',
     zones: [
       { kind: 'field', glass: true, col: '성함',    ph: '이름',   rect: [16, 48.41, 68, 6.15] },
-      { kind: 'field', glass: true, col: '출생연도', ph: '예: 2005', rect: [16, 55.79, 68, 6.15], type: 'text', mode: 'numeric', format: 'year' },
+      { kind: 'wheel', col: '출생연도', rect: [16, 55.79, 68, 6.15], from: 2008, to: 1997, ph: '출생연도 선택' },   // 한국나이 19~30세 = 08~97년생 (탭하면 드롭다운 휠)
       { ...NEXT_BTN, require: ['성함', '출생연도'] },
     ] },
 
-  { id: 'phone', img: 'pages/p-8q.jpg',
-    zones: [
-      // 연락처 칸은 질문 문장 폭(26.3~76.0%)에 맞춰 양옆 1%씩만 더 넓게
-      { kind: 'field', glass: true, col: '연락처', ph: '010-0000-0000', rect: [25.3, 48.41, 51.72, 6.15], type: 'tel', mode: 'numeric', format: 'phone' },
-      { ...NEXT_BTN, require: ['연락처'] },
-    ] },
-
-  { id: 'station', img: 'pages/p-9q.jpg', consent: true,
+  // 순서: 성함/출생연도 → 가까운 역(가벼운 선택) → 연락처(마지막 관문·동의+제출)
+  { id: 'station', img: 'pages/p-9q.jpg',
     zones: [
       { kind: 'field', glass: true, col: '가까운 역', ph: 'ex) 당산역', rect: [16, 48.41, 68, 6.15] },
-      { ...NEXT_BTN, require: ['가까운 역'], consent: true, submit: true },
+      { ...NEXT_BTN, require: ['가까운 역'] },
+    ] },
+
+  { id: 'phone', img: 'pages/p-8q.jpg', consent: true,
+    note: { text: '🔒 예약 안내용으로만 · 스팸 0건 · 24시간 뒤 삭제', rect: [4, 54.6, 92, 3.2] },
+    zones: [
+      // 연락처 칸은 질문 문장 폭(26.3~76.0%)에 맞춰 양옆 1%씩만 더 넓게
+      { kind: 'field', glass: true, col: '연락처', ph: '010-0000-0000', rect: [25.3, 48.41, 51.72, 6.15], type: 'tel', mode: 'numeric', format: 'phone', pattern: '[0-9]*', autocomplete: 'tel' },
+      { ...NEXT_BTN, require: ['연락처'], consent: true, submit: true },
     ] },
 ];
 
@@ -399,6 +442,8 @@ function render() {
       inp.dataset.col = z.col;
       inp.type = z.type || 'text';
       if (z.mode) inp.inputMode = z.mode;
+      if (z.pattern) inp.pattern = z.pattern;
+      if (z.autocomplete) inp.autocomplete = z.autocomplete;
       if (z.format) inp.dataset.format = z.format;
       inp.value = state.answers[z.col] || '';
       if (z.glass) { inp.placeholder = z.ph || ''; inp.style.cssText = css(z.rect); }
@@ -408,6 +453,8 @@ function render() {
         if (inp.value) inp.style.background = z.fill;
       }
       layer.appendChild(inp);
+    } else if (z.kind === 'wheel') {
+      layer.appendChild(wheelEl(z, true));
     } else if (z.smore) {
       layer.appendChild(smoreBtn(z, idx));
     } else {
@@ -423,6 +470,7 @@ function render() {
   if (s.labelsBy) zonesOf(s).forEach((z, i) => layer.appendChild(plabel(s, z, i)));
   if (s.scale) layer.appendChild(scaleEl(s.scale, true));
   if (s.consent) layer.appendChild(consentEl());
+  if (s.note) { const n = document.createElement('div'); n.className = 'field-note'; n.textContent = s.note.text; n.style.cssText = css(s.note.rect); layer.appendChild(n); }
 
   $screen.replaceChildren(layer);
   $back.classList.toggle('show', state.i > 0);
@@ -489,6 +537,46 @@ function scaleEl(sc, live) {
     refreshNext();
   });
   return el;
+}
+
+function wheelEl(z, live) {
+  const wrap = document.createElement('div'); wrap.className = 'wheel-wrap';
+  const field = document.createElement('div'); field.className = 'wheel-field';
+  field.style.cssText = `left:${z.rect[0]}%;top:${z.rect[1]}%;width:${z.rect[2]}%;height:${z.rect[3]}%`;
+  field.innerHTML = '<span class="wheel-val"></span><span class="wheel-chev">\u25be</span>';
+  const val = field.querySelector('.wheel-val');
+  const disp = () => { const v = state.answers[z.col]; val.textContent = v ? (String(v).slice(2).padStart(2, '0') + '년생') : (z.ph || '출생연도 선택'); field.classList.toggle('empty', !v); };
+  disp();
+  const drop = document.createElement('div'); drop.className = 'wheel-drop';
+  drop.style.cssText = `left:${z.rect[0]}%;top:calc(${z.rect[1] + z.rect[3]}% + var(--u) * 6);width:${z.rect[2]}%;height:calc(var(--u) * 168)`;
+  const sc = document.createElement('div'); sc.className = 'wheel-scroll';
+  const ph = document.createElement('div'); ph.className = 'wheel-item placeholder'; ph.dataset.year = ''; ph.textContent = '선택'; sc.appendChild(ph);
+  for (let y = z.from; y >= z.to; y--) {
+    const it = document.createElement('div'); it.className = 'wheel-item';
+    it.dataset.year = y; it.textContent = String(y).slice(2).padStart(2, '0') + '년생';
+    sc.appendChild(it);
+  }
+  drop.appendChild(sc);
+  drop.insertAdjacentHTML('beforeend', '<div class="wheel-band"></div><div class="wheel-fade t"></div><div class="wheel-fade b"></div>');
+  const back = document.createElement('div'); back.className = 'wheel-back';
+  wrap.append(back, field, drop);
+  const items = () => [...sc.children];
+  const toCenter = it => it.offsetTop - (sc.clientHeight / 2 - it.clientHeight / 2);
+  const centerIdx = () => { const mid = sc.scrollTop + sc.clientHeight / 2; let bi = 0, bd = 1e9;
+    items().forEach((it, i) => { const c = it.offsetTop + it.clientHeight / 2, d = Math.abs(c - mid); if (d < bd) { bd = d; bi = i; } }); return bi; };
+  const mark = () => { const bi = centerIdx(); items().forEach((it, i) => it.classList.toggle('on', i === bi)); };
+  const close = () => wrap.classList.remove('open');
+  const open = () => { wrap.classList.add('open'); requestAnimationFrame(() => { const cur = state.answers[z.col]; let t = sc.children[0];
+    if (cur) { const f = items().find(i => i.dataset.year === String(cur)); if (f) t = f; }
+    if (sc.clientHeight) sc.scrollTop = toCenter(t); mark(); }); };
+  const pick = y => { if (y) state.answers[z.col] = y; else delete state.answers[z.col]; track('answer', { col: z.col, answer: y }); disp(); refreshNext(); close(); };
+  if (live) {
+    field.addEventListener('click', e => { e.stopPropagation(); wrap.classList.contains('open') ? close() : open(); });
+    back.addEventListener('click', close);
+    sc.addEventListener('scroll', mark);
+    sc.addEventListener('click', e => { const it = e.target.closest('.wheel-item'); if (!it) return; pick(it.dataset.year); });
+  }
+  return wrap;
 }
 
 function consentEl() {
@@ -575,8 +663,16 @@ function buildFx(s) {
     f.className = 'field glass fake' + (v ? '' : ' empty'); f.textContent = v || z.ph || ''; f.style.cssText = css(z.rect);
     root.appendChild(f); pieces.push({ el: f, top: z.rect[1], s: 1, o: 1 });
   } });
+  zones.forEach(z => { if (z.kind === 'wheel') {   // 출생연도 — 전환 중엔 컴팩트 필드
+    const v = state.answers[z.col], f = document.createElement('div');
+    f.className = 'wheel-fake' + (v ? '' : ' empty');
+    f.innerHTML = `<span>${v ? (String(v).slice(2).padStart(2, '0') + '년생') : (z.ph || '출생연도 선택')}</span><span style="opacity:.7">\u25be</span>`;
+    f.style.cssText = `left:${z.rect[0]}%;top:${z.rect[1]}%;width:${z.rect[2]}%;height:${z.rect[3]}%`;
+    root.appendChild(f); pieces.push({ el: f, top: z.rect[1], s: 1, o: 1 });
+  } });
   zones.forEach((z, idx) => { if (z.smore) { const b = smoreBtn(z, idx); root.appendChild(b); pieces.push({ el: b, z: idx, kind: z.kind, top: z.rect ? z.rect[1] : 84, s: 1, o: 1 }); } });
   if (s.consent) { const c = consentEl(); root.appendChild(c); pieces.push({ el: c, top: 90.7, s: 1, o: 1 }); }
+  if (s.note) { const n = document.createElement('div'); n.className = 'field-note'; n.textContent = s.note.text; n.style.cssText = css(s.note.rect); root.appendChild(n); pieces.push({ el: n, top: s.note.rect[1], s: 1, o: 1 }); }
   // 같은 줄(윗변 차이 1.5% 이내)은 같은 순번 → 스모어처럼 위에서부터 줄 단위로 차례차례
   let order = -1, last = -99;
   pieces.slice().sort((a, b) => a.top - b.top).forEach(p => { if (p.top - last > 1.5) { order++; last = p.top; } p.order = order; });
