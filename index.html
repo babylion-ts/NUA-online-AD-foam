@@ -98,6 +98,18 @@
   .blk .pz-dot { position: absolute; width: calc(var(--u) * 11); height: calc(var(--u) * 11); border-radius: 50%; border: 1.5px solid #f4f1ec; background: rgba(0,0,0,.2); box-sizing: border-box; }
   .blk .pz-chip { position: absolute; right: 0; top: 0; white-space: nowrap; font-family: 'Pretendard', var(--font); font-weight: 500; font-size: calc(var(--u) * 10.5);
     padding: calc(var(--u) * 5) calc(var(--u) * 10); border-radius: 999px; border: 1px solid rgba(255,255,255,.45); color: rgba(255,255,255,.85); }
+  /* 페이지2 이벤트 안내(시안5) */
+  .blk [class^="pz-ev-"] { font-family: 'Pretendard', var(--font); }
+  .blk .pz-ev-t { font-family: 'Pretendard', var(--font); font-weight: 700; font-size: calc(var(--u) * 17); line-height: 1.25; letter-spacing: -.01em; }
+  .blk .pz-ev-s { font-size: calc(var(--u) * 11.5); color: rgba(244,241,236,.72); margin-top: calc(var(--u) * 5); line-height: 1.5; }
+  .blk .pz-ev-elig { font-weight: 700; font-size: calc(var(--u) * 13); margin-top: calc(var(--u) * 16); }
+  .blk .pz-ev-k { font-weight: 700; font-size: calc(var(--u) * 12.5); margin-top: calc(var(--u) * 12); }
+  .blk .pz-ev-v { font-size: calc(var(--u) * 11.5); color: rgba(244,241,236,.74); margin-top: calc(var(--u) * 2); line-height: 1.45; }
+  .blk .pz-ev-dm { font-size: calc(var(--u) * 11.5); margin-top: calc(var(--u) * 14); color: rgba(244,241,236,.86); }
+  .blk .pz-ev-ic { font-size: calc(var(--u) * 15.5); vertical-align: -.12em; margin-right: calc(var(--u) * 1); }
+  .blk .pz-ev-lab { font-size: calc(var(--u) * 10); color: rgba(244,241,236,.55); letter-spacing: .02em; margin-bottom: calc(var(--u) * 6); }
+  .blk .pz-thumbs { display: flex; gap: calc(var(--u) * 7); }
+  .blk .pz-thumbs img { width: calc(var(--u) * 152); height: calc(var(--u) * 80); object-fit: cover; border-radius: calc(var(--u) * 8); display: block; box-shadow: 0 calc(var(--u) * 6) calc(var(--u) * 16) rgba(0,0,0,.5); }
 
   /* 원본 입력칸 위에 얹는 실제 입력창 */
   .field {
@@ -293,19 +305,21 @@ const STEPS = [
   // 첫 화면: '신청하기'도 '다음'과 같은 미니멀 스모어 버튼(96×36px@390), 원래 버튼 중심(y 84.5%)에.
   // 이미지는 p-1n.jpg — 원본 p-1.jpg에서 그려진 '신청하기' 버튼만 지우고 원래 배경 복원
   { id: 'intro', img: 'pages/p-1n.jpg',
-    zones: [{ ...NEXT_BTN, text: '신청하기', cy: 84.5, w: 150 }] },   // 가로만 넓게(150px@390), 높이·글씨는 '다음'과 같음
+    zones: [{ ...NEXT_BTN, text: '내 무드 찾기', cy: 84.5, w: 175 }] },   // 가로만 넓게(175px@390), 높이·글씨는 '다음'과 같음
 
   // 프로세스 설명 (인트로 다음)
   // 프로세스: 시안 2-2(세로 타임라인). 배경판(bg.jpg) 위에 HTML 블록으로 구성, 사진 4장은 원본 process.jpg에서 잘라낸 proc-*.jpg
   // blocks: box = [x, y, 폭, 높이] (폰 390×650px 기준) — 넘어갈 때 블록마다 한 조각으로 움직임
   { id: 'process', img: 'pages/bg.jpg',
+    // 페이지2: 이벤트 안내 텍스트(시안5) + 무드 스타일링 사진 썸네일 2장
     blocks: [
-      { box: [28, 62, 334, 56], html: `<div class="pz-title">Image consulting<br>process</div>` },
-      { box: [27, 146, 13, 342], html: `<div class="pz-line" style="left:calc(var(--u)*6);top:calc(var(--u)*12);height:calc(var(--u)*330)"></div>`
-          + `<div class="pz-dot" style="left:calc(var(--u)*1);top:calc(var(--u)*0.5)"></div><div class="pz-dot" style="left:calc(var(--u)*1);top:calc(var(--u)*175.5)"></div>` },
-      { box: [52, 142, 310, 154], html: `<div class="pz-h">Mood Reading</div><div class="pz-k">내 고유의 분위기를 읽어드려요</div>` + DIPTYCH('proc-s1a', 'proc-s1b') },
-      { box: [52, 317, 310, 154], html: `<div class="pz-h">Mood Styling</div><div class="pz-k">퍼스널컬러 &amp; 골격진단 중 택1</div>` + DIPTYCH('proc-s2a', 'proc-s2b') },
-      { box: [262, 487, 100, 22], html: `<div class="pz-chip">+ 결과지 PDF</div>` },
+      { box: [50, 160, 312, 200], html: `<div class="pz-ev-t">Free Event : Draw your own Mood</div>`
+          + `<div class="pz-ev-s">당신만의 무드를 찾길 바라며 준비한 NUA 이벤트 ᵕ̈</div>`
+          + `<div class="pz-ev-elig">ᵕ̈ 성별 무관 / 만 18세 이상 ᵕ̈</div>`
+          + `<div class="pz-ev-k">➶ 모집 인원 및 발표</div><div class="pz-ev-v">모집 기간 중 상시 추첨하여 개별 연락</div>`
+          + `<div class="pz-ev-k">➶ 체험 혜택</div><div class="pz-ev-v">전 프로그램 무료 제공</div>`
+          + `<div class="pz-ev-dm"><span class="pz-ev-ic">✉️</span> 문의 : DM (@nua.look)</div>` },
+      { box: [50, 386, 312, 90], html: `<div class="pz-thumbs"><img src="pages/proc-s2a.jpg" alt=""><img src="pages/proc-s2b.jpg" alt=""></div>` },
     ],
     zones: [{ ...NEXT_BTN }] },
 
@@ -358,7 +372,7 @@ const STEPS = [
     ] },
 
   { id: 'phone', img: 'pages/p-8q.jpg', consent: true,
-    note: { text: '🔒 예약 안내용으로만 · 스팸 0건 · 24시간 뒤 삭제', rect: [4, 54.6, 92, 3.2] },
+    note: { text: '🔒 예약 안내용으로만 · 24시간 뒤 삭제', rect: [4, 54.6, 92, 3.2] },
     zones: [
       // 연락처 칸은 질문 문장 폭(26.3~76.0%)에 맞춰 양옆 1%씩만 더 넓게
       { kind: 'field', glass: true, col: '연락처', ph: '010-0000-0000', rect: [25.3, 48.41, 51.72, 6.15], type: 'tel', mode: 'numeric', format: 'phone', pattern: '[0-9]*', autocomplete: 'tel' },
